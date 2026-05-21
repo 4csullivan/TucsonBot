@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  discord-bot:
+    build: .
+    container_name: tucson-bot
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      # Maps your local ./data directory to the container's data directory
+      - ./data:/app/data
