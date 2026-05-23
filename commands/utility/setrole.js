@@ -1,3 +1,5 @@
+/* DEPRECATED!!
+
 const { SlashCommandBuilder, PermissionFlagsBits, InteractionContextType, MessageFlags } = require('discord.js');
 
 module.exports = {
@@ -20,3 +22,4 @@ module.exports = {
         }
     },
 };
+*/

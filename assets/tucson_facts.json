@@ -1,0 +1,11 @@
+{
+    "version": "1.2.0",
+    "description": "A collection of responses for answering user questions.",
+    "phrases": [
+        "Tucson is the second most populated city in Arizona",
+        "Tucson is home to the largest ACE Hardware west of the Mississippi",
+        "Tucson is the home of the oldest Mexican restaurant in the country run by the same family",
+        "the United States Handball Association Hall of Fame is located in Tucson",
+        "Tucson hosts the largest non-motorized parade in the world"
+    ]
+}
