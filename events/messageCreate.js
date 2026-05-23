@@ -17,7 +17,21 @@ async function replyToMention(message) {
     const isNice = nicePhrases.some((phrase) => messageLower.includes(phrase));
     const hasQuestion = questionPhrases.some((phrase) => messageLower.includes(phrase));
 
-    if (messageLower.endsWith('?') || hasQuestion) {
+    const repeatPhrase = 'repeat the phrase';
+    const repeatIndex = messageLower.indexOf(repeatPhrase);
+
+    if (repeatIndex !== -1) {
+        var phraseToRepeat = messageLower.slice(repeatIndex + repeatPhrase.length).trim();
+        if (phraseToRepeat.startsWith(':')) phraseToRepeat = phraseToRepeat.slice(1).trim();
+        if (phraseToRepeat.startsWith('"') && phraseToRepeat.endsWith('"')) {
+            phraseToRepeat = phraseToRepeat.slice(1, -1);
+        }
+        if (phraseToRepeat.length > 0) {
+            await message.reply(phraseToRepeat);
+            return;
+        }
+    }
+    else if (messageLower.endsWith('?') || hasQuestion) {
         const answer = eightBallPhrases[Math.floor(Math.random() * eightBallPhrases.length)];
         await message.reply(answer);
     }
