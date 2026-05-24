@@ -3,7 +3,7 @@ const { SlashCommandBuilder, PermissionFlagsBits, InteractionContextType, Messag
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('clearroles')
-        .setDescription('Clear all AZ roles for interactions')
+        .setDescription('Clear all AZ roles for TucsonBot interactions')
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
         .setContexts(InteractionContextType.Guild),
     async execute(interaction) {

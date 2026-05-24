@@ -1,0 +1,33 @@
+const { SlashCommandBuilder, PermissionFlagsBits, InteractionContextType, MessageFlags } = require('discord.js');
+
+module.exports = {
+    data: new SlashCommandBuilder()
+        .setName('checkfeature')
+        .setDescription('Get information about a specific TucsonBot feature')
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+        .addStringOption((option) =>
+            option
+                .setName('feature')
+                .setDescription('The feature to get info on')
+                .setRequired(true)
+                .addChoices(
+                    { name: 'Correct Misspellings', value: 'misspelling_corrections' },
+                    { name: 'React to Messages', value: 'message_reactions' },
+                    { name: 'Respond to Mentions', value: 'mention_response' }
+                ).setRequired(true)
+        )
+        .setContexts(InteractionContextType.Guild),
+    async execute(interaction) {
+        const feature = interaction.options.getString('feature');
+        const guildKey = `guild_${interaction.guildId}_config_${feature}`;
+
+        const config = await interaction.client.keyv.get(guildKey);
+        if (config === 'enabled') {
+            await interaction.reply({ content: `The feature **${feature}** is enabled for this server.`, flags: MessageFlags.Ephemeral });
+        } else if (config === 'disabled') {
+            await interaction.reply({ content: `The feature **${feature}** is disabled for this server.`, flags: MessageFlags.Ephemeral });
+        } else if (config === 'limited') {
+            await interaction.reply({ content: `The feature **${feature}** is limited to AZ members only for this server.`, flags: MessageFlags.Ephemeral });
+        }
+    },
+};

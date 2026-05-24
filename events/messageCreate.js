@@ -73,6 +73,27 @@ function isNice(message) {
     return nicePhrases.some((phrase) => messageLower.includes(phrase));
 }
 
+let azRoleIds = [];
+let isAZ = false;
+
+async function CheckAZ(message) {
+    const guildKey = `guild_${message.guildId}_az_roles`;
+    azRoleIds = await message.client.keyv.get(guildKey) || [];
+    isAZ = azRoleIds.some((roleID) => message.member.roles.cache.has(roleID));
+}
+
+const Feature = {
+    MISSPELLINGS: 'misspelling_corrections',
+    REACTIONS: 'message_reactions',
+    RESPONSES: 'mention_response',
+}
+
+async function checkFeature(message, feature) {
+    const guildKey = `guild_${message.guildId}_config_${feature}`;
+    const config = await message.client.keyv.get(guildKey);
+    return config;
+}
+
 module.exports = {
 	name: Events.MessageCreate,
 	async execute(message) {
@@ -82,21 +103,42 @@ module.exports = {
 
         try {
             if (message.mentions.users && message.mentions.users.find((user) => user.id === message.client.user.id)) {
+                const canRespond = await checkFeature(message, Feature.RESPONSES);
+                if (canRespond === 'disabled') return;
+                if (canRespond === 'limited') {
+                    await CheckAZ(message);
+                    if (!isAZ) return;
+                }
                 await replyToMention(message);
             }
             else if (message.content.toLowerCase().includes('tucsonbot') || message.content.toLowerCase().includes('tucson bot')) {
+                const canReact = await checkFeature(message, Feature.REACTIONS);
+                if (canReact === 'disabled') return;
+                if (canReact === 'limited') {
+                    await CheckAZ(message);
+                    if (!isAZ) return;
+                }
                 await checkForMentions(message);
             }
             else if (message.content.toLowerCase().includes('tusconbot') || message.content.toLowerCase().includes('tuscon bot')) {
+                const canRespond = await checkFeature(message, Feature.RESPONSES);
+                if (canRespond === 'disabled') return;
+                if (canRespond === 'limited') {
+                    await CheckAZ(message);
+                    if (!isAZ) return;
+                }
                 await message.reply('Oops! You did me dirty! It\'s Tucson!');
             }
             else {
-                const guildKey = `guild_${message.guildId}_az_roles`;
-                const azRoleIDs = await message.client.keyv.get(guildKey) || [];
-                const isAZ = azRoleIDs.some((roleID) => message.member.roles.cache.has(roleID));
-
                 for (const word of trigger_words) {
                     if (message.content.toLowerCase().includes(word)) {
+                        const canCorrect = await checkFeature(message, Feature.MISSPELLINGS);
+                        if (canCorrect === 'disabled') return;
+                        if (canCorrect === 'limited') {
+                            await CheckAZ(message);
+                            if (!isAZ) return;
+                        }
+                        
                         if (isAZ) {
                             const fact = tucsonPhrases[Math.floor(Math.random() * tucsonPhrases.length)];
                             await message.reply(`Oops! It\'s Tucson! Also, it looks like this user is from Arizona! Did you know ${fact}?`);

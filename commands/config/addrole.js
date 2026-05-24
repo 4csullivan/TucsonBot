@@ -3,7 +3,7 @@ const { SlashCommandBuilder, PermissionFlagsBits, InteractionContextType, Messag
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('addrole')
-        .setDescription('Add an AZ role for interactions')
+        .setDescription('Add an AZ role for TucsonBot interactions')
         .addRoleOption(option => option.setName('role').setDescription('The role to add for interactions').setRequired(true))
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
         .setContexts(InteractionContextType.Guild),
