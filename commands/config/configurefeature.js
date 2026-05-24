@@ -1,8 +1,21 @@
 const { SlashCommandBuilder, PermissionFlagsBits, InteractionContextType, MessageFlags } = require('discord.js');
 
+function getFeatureName(featureKey) {
+    switch (featureKey) {
+        case 'misspelling_corrections':
+            return 'Correct Misspellings';
+        case 'message_reactions':
+            return 'React to Messages';
+        case 'mention_response':
+            return 'Respond to Mentions';
+        default:
+            return featureKey;
+    }
+}
+
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('configurebot')
+        .setName('configurefeature')
         .setDescription('Enable, disable, or limit TucsonBot features for this server')
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
         .addStringOption((option) =>
@@ -35,13 +48,13 @@ module.exports = {
 
         if (enabled === 'enable') {
             await interaction.client.keyv.set(guildKey, 'enabled');
-            await interaction.reply({ content: `The feature **${feature}** has been enabled for this server.`, flags: MessageFlags.Ephemeral });
+            await interaction.reply({ content: `The feature **${getFeatureName(feature)}** has been enabled for this server.`, flags: MessageFlags.Ephemeral });
         } else if (enabled === 'disable') {
             await interaction.client.keyv.set(guildKey, 'disabled');
-            await interaction.reply({ content: `The feature **${feature}** has been disabled for this server.`, flags: MessageFlags.Ephemeral });
+            await interaction.reply({ content: `The feature **${getFeatureName(feature)}** has been disabled for this server.`, flags: MessageFlags.Ephemeral });
         } else if (enabled === 'limit') {
             await interaction.client.keyv.set(guildKey, 'limited');
-            await interaction.reply({ content: `The feature **${feature}** has been limited to AZ members only for this server.`, flags: MessageFlags.Ephemeral });
+            await interaction.reply({ content: `The feature **${getFeatureName(feature)}** has been limited to AZ members only for this server.`, flags: MessageFlags.Ephemeral });
         }
     },
 };

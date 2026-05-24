@@ -1,5 +1,18 @@
 const { SlashCommandBuilder, PermissionFlagsBits, InteractionContextType, MessageFlags } = require('discord.js');
 
+function getFeatureName(featureKey) {
+    switch (featureKey) {
+        case 'misspelling_corrections':
+            return 'Correct Misspellings';
+        case 'message_reactions':
+            return 'React to Messages';
+        case 'mention_response':
+            return 'Respond to Mentions';
+        default:
+            return featureKey;
+    }
+}
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('checkfeature')
@@ -22,12 +35,12 @@ module.exports = {
         const guildKey = `guild_${interaction.guildId}_config_${feature}`;
 
         const config = await interaction.client.keyv.get(guildKey);
-        if (config === 'enabled') {
-            await interaction.reply({ content: `The feature **${feature}** is enabled for this server.`, flags: MessageFlags.Ephemeral });
-        } else if (config === 'disabled') {
-            await interaction.reply({ content: `The feature **${feature}** is disabled for this server.`, flags: MessageFlags.Ephemeral });
+        if (config === 'disabled') {
+            await interaction.reply({ content: `The feature **${getFeatureName(feature)}** is disabled for this server.`, flags: MessageFlags.Ephemeral });
         } else if (config === 'limited') {
-            await interaction.reply({ content: `The feature **${feature}** is limited to AZ members only for this server.`, flags: MessageFlags.Ephemeral });
+            await interaction.reply({ content: `The feature **${getFeatureName(feature)}** is limited to AZ members only for this server.`, flags: MessageFlags.Ephemeral });
+        } else {
+            await interaction.reply({ content: `The feature **${getFeatureName(feature)}** is enabled for this server.`, flags: MessageFlags.Ephemeral });
         }
     },
 };
