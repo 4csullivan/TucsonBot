@@ -8,6 +8,8 @@ function getFeatureName(featureKey) {
             return 'React to Messages';
         case 'mention_response':
             return 'Respond to Mentions';
+        case 'repeat_phrase':
+            return 'Repeat Phrases';
         default:
             return featureKey;
     }
@@ -15,7 +17,7 @@ function getFeatureName(featureKey) {
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('configurefeature')
+        .setName('editfeature')
         .setDescription('Enable, disable, or limit TucsonBot features for this server')
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
         .addStringOption((option) =>
@@ -26,7 +28,8 @@ module.exports = {
                 .addChoices(
                     { name: 'Correct Misspellings', value: 'misspelling_corrections' },
                     { name: 'React to Messages', value: 'message_reactions' },
-                    { name: 'Respond to Mentions', value: 'mention_response' }
+                    { name: 'Respond to Mentions', value: 'mention_response' },
+                    { name: 'Repeat Phrases', value: 'repeat_phrase' }
                 ).setRequired(true)
         )
         .addStringOption((option) =>

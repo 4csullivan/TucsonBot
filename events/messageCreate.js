@@ -21,6 +21,12 @@ async function replyToMention(message) {
     const repeatIndex = messageLower.indexOf(repeatPhrase);
 
     if (repeatIndex !== -1) {
+        const canRepeat = await checkFeature(message, Feature.REPEAT);
+        if (canRepeat === 'disabled') return;
+        if (canRepeat === 'limited') {
+            await CheckAZ(message);
+            if (!isAZ) return;
+        }
         var phraseToRepeat = messageLower.slice(repeatIndex + repeatPhrase.length).trim();
         if (phraseToRepeat.startsWith(':')) phraseToRepeat = phraseToRepeat.slice(1).trim();
         if (phraseToRepeat.startsWith('"') && phraseToRepeat.endsWith('"')) {
@@ -43,6 +49,26 @@ async function replyToMention(message) {
     }
     else {
         //await message.reply('You mentioned me!');
+    }
+}
+
+async function repeatPhrase(message, repeatIndex) {
+    const canRepeat = await checkFeature(message, Feature.REPEAT);
+    if (canRepeat === 'disabled') return;
+    if (canRepeat === 'limited') {
+        await CheckAZ(message);
+        if (!isAZ) return;
+    }
+
+    const messageLower = message.content.toLowerCase();
+    const phrase = 'repeat the phrase';
+    let phraseToRepeat = messageLower.slice(repeatIndex + phrase.length).trim();
+    if (phraseToRepeat.startsWith(':')) phraseToRepeat = phraseToRepeat.slice(1).trim();
+    if (phraseToRepeat.startsWith('"') && phraseToRepeat.endsWith('"')) {
+        phraseToRepeat = phraseToRepeat.slice(1, -1);
+    }
+    if (phraseToRepeat.length > 0) {
+        await message.reply(phraseToRepeat);
     }
 }
 
@@ -86,6 +112,7 @@ const Feature = {
     MISSPELLINGS: 'misspelling_corrections',
     REACTIONS: 'message_reactions',
     RESPONSES: 'mention_response',
+    REPEAT: 'repeat_phrase',
 }
 
 async function checkFeature(message, feature) {
@@ -102,6 +129,7 @@ module.exports = {
         trigger_words = ['tuscon'];
 
         try {
+            const messageLower = message.content.toLowerCase();
             if (message.mentions.users && message.mentions.users.find((user) => user.id === message.client.user.id)) {
                 const canRespond = await checkFeature(message, Feature.RESPONSES);
                 if (canRespond === 'disabled') return;
@@ -109,9 +137,15 @@ module.exports = {
                     await CheckAZ(message);
                     if (!isAZ) return;
                 }
-                await replyToMention(message);
+                const repeatIndex = messageLower.indexOf('repeat the phrase');
+                if (repeatIndex !== -1) {
+                    await repeatPhrase(message, repeatIndex);
+                }
+                else {
+                    await replyToMention(message);
+                }
             }
-            else if (message.content.toLowerCase().includes('tucsonbot') || message.content.toLowerCase().includes('tucson bot')) {
+            else if (messageLower.includes('tucsonbot') || messageLower.includes('tucson bot')) {
                 const canReact = await checkFeature(message, Feature.REACTIONS);
                 if (canReact === 'disabled') return;
                 if (canReact === 'limited') {
@@ -120,7 +154,7 @@ module.exports = {
                 }
                 await checkForMentions(message);
             }
-            else if (message.content.toLowerCase().includes('tusconbot') || message.content.toLowerCase().includes('tuscon bot')) {
+            else if (messageLower.includes('tusconbot') || messageLower.includes('tuscon bot')) {
                 const canRespond = await checkFeature(message, Feature.RESPONSES);
                 if (canRespond === 'disabled') return;
                 if (canRespond === 'limited') {
@@ -132,13 +166,13 @@ module.exports = {
             else {
                 for (const word of trigger_words) {
                     if (message.content.toLowerCase().includes(word)) {
-                        const canCorrect = await checkFeature(message, Feature.MISSPELLINGS);
-                        if (canCorrect === 'disabled') return;
-                        if (canCorrect === 'limited') {
+                        const canTrigger = await checkFeature(message, Feature.MISSPELLINGS);
+                        if (canTrigger === 'disabled') return;
+                        if (canTrigger === 'limited') {
                             await CheckAZ(message);
                             if (!isAZ) return;
                         }
-                        
+
                         if (isAZ) {
                             const fact = tucsonPhrases[Math.floor(Math.random() * tucsonPhrases.length)];
                             await message.reply(`Oops! It\'s Tucson! Also, it looks like this user is from Arizona! Did you know ${fact}?`);
