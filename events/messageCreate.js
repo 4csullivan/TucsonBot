@@ -168,8 +168,8 @@ module.exports = {
                     if (message.content.toLowerCase().includes(word)) {
                         const canTrigger = await checkFeature(message, Feature.MISSPELLINGS);
                         if (canTrigger === 'disabled') return;
+                        await CheckAZ(message);
                         if (canTrigger === 'limited') {
-                            await CheckAZ(message);
                             if (!isAZ) return;
                         }
 
