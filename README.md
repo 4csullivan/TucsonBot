@@ -1,108 +1,85 @@
-# Getting Started app for Discord
+# TucsonBot
 
-This project contains a basic rock-paper-scissors-style Discord app written in JavaScript, built for the [getting started guide](https://discord.com/developers/docs/getting-started).
+TucsonBot is a small Discord bot written in Node.js using discord.js and Keyv (sqlite) for lightweight per-guild configuration. It provides fun utilities related to the city of Tucson. Features can be enabled, disabled, or limited to specific roles per guild.
 
-![Demo of app](https://github.com/discord/discord-example-app/raw/main/assets/getting-started-demo.gif?raw=true)
+# Features
 
-## Project structure
-Below is a basic overview of the project structure:
+- Correct misspellings of Tucson and respond with some fun facts
+- React to messages referencing TucsonBot
+- Respond to questions directed towards TucsonBot, giving an 'eight ball' like response
+- Repeat specific phrases when asked
 
+# Prerequisites
+- Node.js 20+ (the project Dockerfile uses node:20-alpine)
+- npm
+- Docker (if deploying to a container)
+
+# Quick start
+
+1. Clone the repository and install dependencies:
 ```
-├── examples    -> short, feature-specific sample apps
-│   ├── app.js  -> finished app.js code
-│   ├── button.js
-│   ├── command.js
-│   ├── modal.js
-│   ├── selectMenu.js
-├── .env.sample -> sample .env file
-├── app.js      -> main entrypoint for app
-├── commands.js -> slash command payloads + helpers
-├── game.js     -> logic specific to RPS
-├── utils.js    -> utility functions and enums
-├── package.json
-├── README.md
-└── .gitignore
-```
-
-## Running app locally
-
-Before you start, you'll need to install [NodeJS](https://nodejs.org/en/download/) and [create a Discord app](https://discord.com/developers/applications) with the proper permissions:
-- `applications.commands`
-- `bot` (with Send Messages enabled)
-
-
-Configuring the app is covered in detail in the [getting started guide](https://discord.com/developers/docs/getting-started).
-
-### Setup project
-
-First clone the project:
-```
-git clone https://github.com/discord/discord-example-app.git
+git clone https://github.com/4csullivan/TucsonBot
+cd TucsonBot
+npm ci
 ```
 
-Then navigate to its directory and install dependencies:
+2. Create a .env in the project root with the following variables (replace the placeholders):
 ```
-cd discord-example-app
-npm install
-```
-### Get app credentials
-
-Fetch the credentials from your app's settings and add them to a `.env` file (see `.env.sample` for an example). You'll need your app ID (`APP_ID`), bot token (`DISCORD_TOKEN`), and public key (`PUBLIC_KEY`).
-
-Fetching credentials is covered in detail in the [getting started guide](https://discord.com/developers/docs/getting-started).
-
-> 🔑 Environment variables can be added to the `.env` file in Glitch or when developing locally, and in the Secrets tab in Replit (the lock icon on the left).
-
-### Install slash commands
-
-The commands for the example app are set up in `commands.js`. All of the commands in the `ALL_COMMANDS` array at the bottom of `commands.js` will be installed when you run the `register` command configured in `package.json`:
-
-```
-npm run register
+APP_ID=YOUR_APPLICATION_ID
+DISCORD_TOKEN=YOUR_BOT_TOKEN
+PUBLIC_KEY=YOUR_PUBLIC_KEY
+TEST_GUILD_ID=YOUR_TEST_GUILD_ID
 ```
 
-### Run the app
-
-After your credentials are added, go ahead and run the app:
+3. Create the data directory (Keyv sqlite DB is stored here):
 
 ```
-node app.js
+mkdir -p data
 ```
 
-> ⚙️ A package [like `nodemon`](https://github.com/remy/nodemon), which watches for local changes and restarts your app, may be helpful while locally developing.
-
-If you aren't following the [getting started guide](https://discord.com/developers/docs/getting-started), you can move the contents of `examples/app.js` (the finished `app.js` file) to the top-level `app.js`.
-
-### Set up interactivity
-
-The project needs a public endpoint where Discord can send requests. To develop and test locally, you can use something like [`ngrok`](https://ngrok.com/) to tunnel HTTP traffic.
-
-Install ngrok if you haven't already, then start listening on port `3000`:
-
+4. Run the bot:
 ```
-ngrok http 3000
+node index.js
 ```
 
-You should see your connection open:
+## Register and deploy slash commands
+
+Before using the slash commands you can deploy them to your test guild (or globally). With your .env set, run:
 
 ```
-Tunnel Status                 online
-Version                       2.0/2.0
-Web Interface                 http://127.0.0.1:4040
-Forwarding                    https://1234-someurl.ngrok.io -> localhost:3000
-
-Connections                  ttl     opn     rt1     rt5     p50     p90
-                              0       0       0.00    0.00    0.00    0.00
+node deploy-commands.js
 ```
 
-Copy the forwarding address that starts with `https`, in this case `https://1234-someurl.ngrok.io`, then go to your [app's settings](https://discord.com/developers/applications).
+## Docker
 
-On the **General Information** tab, there will be an **Interactions Endpoint URL**. Paste your ngrok address there, and append `/interactions` to it (`https://1234-someurl.ngrok.io/interactions` in the example).
+Build image and run with Docker compose:
 
-Click **Save Changes**, and your app should be ready to run 🚀
+```
+docker compose build --no-cache
+docker run compose up -d
+```
 
-## Other resources
-- Read **[the documentation](https://discord.com/developers/docs/intro)** for in-depth information about API features.
-- Browse the `examples/` folder in this project for smaller, feature-specific code examples
-- Join the **[Discord Developers server](https://discord.gg/discord-developers)** to ask questions about the API, attend events hosted by the Discord API team, and interact with other devs.
-- Check out **[community resources](https://discord.com/developers/docs/topics/community-resources#community-resources)** for language-specific tools maintained by community members.
+# Configuration & persistence
+
+- The bot uses Keyv backed by sqlite. The default DB file is ./data/db.sqlite.
+- Per-guild configuration keys are stored as:
+  - guild_<GUILD_ID>_az_roles — array of role IDs allowed for AZ-only features
+  - guild_<GUILD_ID>_config_<feature> — values: "enabled", "disabled", "limited"
+
+# Available slash commands (examples)
+
+- /addrole <role> — Add an AZ role for interactions
+- /clearroles — Clear all AZ roles for the guild
+- /checkroles — List configured AZ roles
+- /editfeature <feature> <enable|disable|limit> — Configure a feature for the guild
+- /checkfeature <feature> — Show current setting for a feature
+
+
+Notes
+
+- Do not commit your bot token or private keys. .env is listed in .gitignore.
+- The repository includes asset files used for replies (assets/*.json). Use these files for updating what the bot says.
+
+License
+
+This project is licensed under the MIT License. See LICENSE for details.
