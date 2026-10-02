@@ -23,7 +23,7 @@ const applyText = (canvas, text) => {
     const context = canvas.getContext('2d');
     let fontSize = 40;
         do {
-            context.font = `${(fontSize -= 5)}px DejaVu Serif`;
+            context.font = `${(fontSize -= 5)}px Liberation Serif`;
         } while (context.measureText(text).width > canvas.width - 5);
     
     return context.font;
@@ -42,7 +42,7 @@ const getWrappedTextConfig = (canvas, text) => {
 
     // 1. Try to shrink the font until it fits on one line or hits the minimum size
     do {
-        context.font = `${fontSize}px Georgia`;
+        context.font = `${fontSize}px Liberation Serif`;
         if (context.measureText(text).width <= maxWidth) {
             return { font: context.font, lines: [text] };
         }
@@ -50,7 +50,7 @@ const getWrappedTextConfig = (canvas, text) => {
     } while (fontSize >= minFontSize);
 
     // 2. If it still doesn't fit at minFontSize, switch to multi-line word wrapping
-    context.font = `${minFontSize}px DejaVu Serif`;
+    context.font = `${minFontSize}px Liberation Serif`;
     const words = text.split(' ');
     const lines = [];
     let currentLine = words[0];
@@ -122,7 +122,7 @@ module.exports = {
             context.fillText(line, centerX, currentY);
         });
 
-        context.font = '26px DejaVu Serif';
+        context.font = '26px Liberation Serif';
         context.fillStyle = 'rgba(255, 255, 255, 0.9)';
         context.textAlign = 'center';
         context.textBaseline = 'middle';
