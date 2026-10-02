@@ -37,7 +37,7 @@ async function getLogs(interaction) {
 const getWrappedTextConfig = (canvas, text) => {
     const context = canvas.getContext('2d');
     let fontSize = 70;
-    const minFontSize = 24; // The threshold where it switches to multi-line
+    const minFontSize = 26; // The threshold where it switches to multi-line
     const maxWidth = canvas.width - 50;
 
     // 1. Try to shrink the font until it fits on one line or hits the minimum size
