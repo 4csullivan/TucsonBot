@@ -23,7 +23,7 @@ const applyText = (canvas, text) => {
     const context = canvas.getContext('2d');
     let fontSize = 40;
         do {
-            context.font = `${(fontSize -= 5)}px Georgia`;
+            context.font = `${(fontSize -= 5)}px DejaVu Serif`;
         } while (context.measureText(text).width > canvas.width - 5);
     
     return context.font;
@@ -50,7 +50,7 @@ const getWrappedTextConfig = (canvas, text) => {
     } while (fontSize >= minFontSize);
 
     // 2. If it still doesn't fit at minFontSize, switch to multi-line word wrapping
-    context.font = `${minFontSize}px Georgia`;
+    context.font = `${minFontSize}px DejaVu Serif`;
     const words = text.split(' ');
     const lines = [];
     let currentLine = words[0];
@@ -122,7 +122,7 @@ module.exports = {
             context.fillText(line, centerX, currentY);
         });
 
-        context.font = '26px Georgia';
+        context.font = '26px DejaVu Serif';
         context.fillStyle = 'rgba(255, 255, 255, 0.9)';
         context.textAlign = 'center';
         context.textBaseline = 'middle';
