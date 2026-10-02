@@ -79,12 +79,12 @@ module.exports = {
 
     async execute(interaction) {
         let quote = "i'm not feeling very inspired :(";
-        let username = interaction.member.displayName;
+        let username = interaction.member.username;
 
         // set the quote and username (username should be first in array)
         const logs = await getLogs(interaction);
         if (logs.length > 0) {
-            username = logs[0];
+            //username = logs[0];
             const randomIndex = Math.max(1, Math.floor(Math.random() * logs.length));
             quote = logs[randomIndex];
         }
