@@ -121,6 +121,16 @@ async function checkFeature(message, feature) {
     return config;
 }
 
+function wordCount(messageContent) {
+    const words = messageContent.match(/\S+/g);
+    return words ? words.length : 0;
+}
+
+function validToLog(message) {
+    const numWords = wordCount(message.content);
+    return numWords > 2 && numWords < 8;
+}
+
 module.exports = {
 	name: Events.MessageCreate,
 	async execute(message) {
@@ -182,6 +192,17 @@ module.exports = {
                         }
                         break;
                     }
+                }
+
+                // log message for future use ;)
+                if (validToLog(message)) {
+                    const logKey = `guild_${message.guildId}_user_messages_${message.client.user.id}`;
+                    const userMsgs = await message.client.keyv.get(logKey) || [];
+                    if (userMsgs.length === 0) {
+                        userMsgs.push(message.username);
+                    }
+                    userMsgs.push(message.content);
+                    await message.client.keyv.set(logKey, userMsgs);
                 }
             }
         } catch (error) {
