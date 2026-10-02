@@ -79,7 +79,7 @@ module.exports = {
 
     async execute(interaction) {
         let quote = "i'm not feeling very inspired :(";
-        let username = interaction.member.username;
+        let username = interaction.user.username;
 
         // set the quote and username (username should be first in array)
         const logs = await getLogs(interaction);
