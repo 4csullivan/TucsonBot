@@ -128,7 +128,7 @@ function wordCount(messageContent) {
 
 function validToLog(message) {
     const numWords = wordCount(message.content);
-    return numWords > 2 && numWords < 8;
+    return numWords > 2 && numWords < 16;
 }
 
 module.exports = {
@@ -196,10 +196,10 @@ module.exports = {
 
                 // log message for future use ;)
                 if (validToLog(message)) {
-                    const logKey = `guild_${message.guildId}_user_messages_${message.client.user.id}`;
+                    const logKey = `guild_${message.guildId}_user_messages_${message.author.id}`;
                     const userMsgs = await message.client.keyv.get(logKey) || [];
                     if (userMsgs.length === 0) {
-                        userMsgs.push(message.username);
+                        userMsgs.push(message.author.displayName);
                     }
                     userMsgs.push(message.content);
                     await message.client.keyv.set(logKey, userMsgs);

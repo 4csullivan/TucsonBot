@@ -56,7 +56,7 @@ Build image and run with Docker compose:
 
 ```
 docker compose build --no-cache
-docker run compose up -d
+docker compose up -d
 ```
 
 # Configuration & persistence
