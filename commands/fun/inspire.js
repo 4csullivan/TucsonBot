@@ -19,16 +19,6 @@ function getBackground() {
     return bgNames[Math.floor(Math.random() * bgNames.length)];
 }
 
-const applyText = (canvas, text) => {
-    const context = canvas.getContext('2d');
-    let fontSize = 40;
-        do {
-            context.font = `${(fontSize -= 5)}px Liberation Serif`;
-        } while (context.measureText(text).width > canvas.width - 5);
-    
-    return context.font;
-}
-
 async function getLogs(interaction) {
     const logKey = `guild_${interaction.guildId}_user_messages_${interaction.member.id}`;
     return await interaction.client.keyv.get(logKey) || [];
@@ -37,8 +27,8 @@ async function getLogs(interaction) {
 const getWrappedTextConfig = (canvas, text) => {
     const context = canvas.getContext('2d');
     let fontSize = 70;
-    const minFontSize = 26; // The threshold where it switches to multi-line
-    const maxWidth = canvas.width - 50;
+    const minFontSize = 40; // The threshold where it switches to multi-line
+    const maxWidth = canvas.width - 100;
 
     // 1. Try to shrink the font until it fits on one line or hits the minimum size
     do {
@@ -88,9 +78,8 @@ module.exports = {
             const randomIndex = Math.max(1, Math.floor(Math.random() * logs.length));
             quote = logs[randomIndex];
         }
-        console.log('logs', logs);
 
-        const canvas = Canvas.createCanvas(500,500);
+        const canvas = Canvas.createCanvas(800,800);
         const context = canvas.getContext('2d');
         setBackgrounds();
         const background = await Canvas.loadImage(getBackground());
@@ -103,11 +92,11 @@ module.exports = {
         context.textBaseline = 'middle';
 
         context.shadowColor = 'rgba(0,0,0,0.5)';
-        context.shadowBlur = 10;
-        context.shadowOffsetX = 2;
-        context.shadowOffsetY = 2;
+        context.shadowBlur = 20;
+        context.shadowOffsetX = 4;
+        context.shadowOffsetY = 4;
         context.strokeStyle = '#000000';
-        context.lineWidth = 2;
+        context.lineWidth = 3;
         context.lineJoin = 'miter';
 
         const fontSize = parseInt(font.match(/\d+/)[0]);
@@ -122,7 +111,7 @@ module.exports = {
             context.fillText(line, centerX, currentY);
         });
 
-        context.font = '26px Liberation Serif';
+        context.font = '36px Liberation Serif';
         context.fillStyle = 'rgba(255, 255, 255, 0.9)';
         context.textAlign = 'center';
         context.textBaseline = 'middle';

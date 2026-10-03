@@ -127,8 +127,13 @@ function wordCount(messageContent) {
 }
 
 function validToLog(message) {
-    const numWords = wordCount(message.content);
-    return numWords > 2 && numWords < 16;
+    console.log('uhhhh', message.mentions.users);
+    let valid = !message.mentions.users || message.mentions.users.size === 0;
+    if (valid) {
+        const numWords = wordCount(message.content);
+        valid = numWords > 2 && numWords < 16;
+    }
+    return valid;
 }
 
 module.exports = {
