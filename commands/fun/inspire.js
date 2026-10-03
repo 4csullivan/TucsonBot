@@ -1,9 +1,10 @@
 const { AttachmentBuilder, SlashCommandBuilder, PermissionFlagsBits, InteractionContextType, MessageFlags } = require('discord.js');
-
-const Canvas = require('@napi-rs/canvas');
+const { GlobalFonts, createCanvas, loadImage } = require('@napi-rs/canvas');
 const fs = require('node:fs');
 const path = require('node:path');
 const bgPath = path.join(__dirname, '../../assets/bg');
+
+GlobalFonts.registerFromPath('/usr/share/fonts/noto/NotoSerif-Regular.ttf', 'Noto Serif');
 
 let bgNames = [];
 
@@ -32,7 +33,7 @@ const getWrappedTextConfig = (canvas, text) => {
 
     // 1. Try to shrink the font until it fits on one line or hits the minimum size
     do {
-        context.font = `${fontSize}px Liberation Serif`;
+        context.font = `${fontSize}px "Noto Serif", "Noto Color Emoji"`;
         if (context.measureText(text).width <= maxWidth) {
             return { font: context.font, lines: [text] };
         }
@@ -40,7 +41,7 @@ const getWrappedTextConfig = (canvas, text) => {
     } while (fontSize >= minFontSize);
 
     // 2. If it still doesn't fit at minFontSize, switch to multi-line word wrapping
-    context.font = `${minFontSize}px Liberation Serif`;
+    context.font = `${minFontSize}px "Noto Serif", "Noto Color Emoji"`;
     const words = text.split(' ');
     const lines = [];
     let currentLine = words[0];
@@ -79,10 +80,10 @@ module.exports = {
             quote = logs[randomIndex];
         }
 
-        const canvas = Canvas.createCanvas(800,800);
+        const canvas = createCanvas(800,800);
         const context = canvas.getContext('2d');
         setBackgrounds();
-        const background = await Canvas.loadImage(getBackground());
+        const background = await loadImage(getBackground());
         context.drawImage(background, 0, 0, canvas.width, canvas.height);
         
         const {font, lines} = getWrappedTextConfig(canvas, quote);
@@ -111,7 +112,7 @@ module.exports = {
             context.fillText(line, centerX, currentY);
         });
 
-        context.font = '36px Liberation Serif';
+        context.font = '36px "Noto Serif", "Noto Color Emoji"';
         context.fillStyle = 'rgba(255, 255, 255, 0.9)';
         context.textAlign = 'center';
         context.textBaseline = 'middle';

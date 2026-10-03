@@ -127,7 +127,6 @@ function wordCount(messageContent) {
 }
 
 function validToLog(message) {
-    console.log('uhhhh', message.mentions.users);
     let valid = !message.mentions.users || message.mentions.users.size === 0;
     if (valid) {
         const numWords = wordCount(message.content);
