@@ -128,10 +128,10 @@ function wordCount(messageContent) {
 
 function validToLog(message) {
     let valid = !message.mentions.users || message.mentions.users.size === 0;
-    if (valid) {
-        const numWords = wordCount(message.content);
-        valid = numWords > 2 && numWords < 16;
-    }
+
+    const numWords = wordCount(message.content);
+    valid = valid && numWords > 3 && numWords <= 16;
+    valid = valid && !message.content.match(/<:\w+:\d+>/);
     return valid;
 }
 
