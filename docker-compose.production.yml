@@ -1,0 +1,17 @@
+services:
+  discord-bot:
+    image: ${TUCSON_IMAGE:?TUCSON_IMAGE is required}
+    container_name: tucson-bot
+    restart: unless-stopped
+    env_file: /opt/tucsonbot/.env
+    environment:
+      COMMAND_STATE_FILE: /usr/src/app/data/commands.sha256
+      HEALTH_FILE: /tmp/tucson-ready
+    volumes:
+      - /opt/tucsonbot/data:/usr/src/app/data
+    healthcheck:
+      test: [CMD, node, -e, "const fs=require('node:fs');process.exit(Date.now()-fs.statSync('/tmp/tucson-ready').mtimeMs<30000?0:1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s

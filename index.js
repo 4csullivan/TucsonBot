@@ -68,6 +68,15 @@ async function initClient() {
 
     // Log in to Discord with your client's token
     await client.login(process.env.DISCORD_TOKEN);
+    if (process.env.HEALTH_FILE) {
+        const health = setInterval(() => {
+            if (client.isReady()) fs.writeFileSync(process.env.HEALTH_FILE, 'ready');
+        }, 10_000);
+        health.unref();
+    }
 }
 
-initClient().catch(console.error);
+initClient().catch(error => {
+    console.error(error);
+    process.exit(1);
+});

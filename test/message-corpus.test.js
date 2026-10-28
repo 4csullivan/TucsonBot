@@ -69,6 +69,25 @@ test('ignores bots, webhooks, DMs and system messages', async t => {
     assert.deepEqual(await corpus.all('SELECT * FROM messages'), []);
 });
 
+test('random-person quotes preserve author identity, scope, and retention', async t => {
+    let time = now;
+    const corpus = await MessageCorpus.open(':memory:', () => time);
+    t.after(() => corpus.close());
+    await corpus.record(message('1'));
+    await corpus.record(message('2', 'Someone else has something inspiring', { author: { id: 'other', bot: false } }));
+    await corpus.record(message('3', 'A secret quote from elsewhere', { channelId: 'private' }));
+    assert.equal((await corpus.randomQuote('guild', 'channel', 'user')).authorId, 'user');
+    assert.equal((await corpus.randomQuote('guild', 'channel', 'other')).authorId, 'other');
+    for (let i = 0; i < 10; i++) {
+        const quote = await corpus.randomQuote('guild', 'channel');
+        assert.ok(['user', 'other'].includes(quote.authorId));
+        assert.notEqual(quote.content, 'A secret quote from elsewhere');
+    }
+    assert.equal(await corpus.randomQuote('other-guild', 'channel'), null);
+    time += RETENTION_MS + 1;
+    assert.equal(await corpus.randomQuote('guild', 'channel'), null);
+});
+
 test('phrase search returns the original author, treats SQL characters literally and respects scope/expiry', async t => {
     let time = now;
     const corpus = await MessageCorpus.open(':memory:', () => time);

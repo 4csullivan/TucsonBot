@@ -79,4 +79,4 @@ function renderGenius({ avatar, quote, displayName, serverName }) {
     return canvas;
 }
 
-module.exports = { renderGenius };
+module.exports = { renderGenius, wrapText, fitLabel };

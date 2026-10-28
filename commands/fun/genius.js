@@ -7,7 +7,7 @@ module.exports = {
         .setName('genius')
         .setDescription('Create a quote image from your messages or search this channel by phrase')
         .addStringOption(option => option.setName('phrase')
-            .setDescription('Find a random quote containing this phrase, from anyone in this channel')
+            .setDescription('Find a random quote containing this phrase from anyone in this channel')
             .setMinLength(1).setMaxLength(100))
         .setContexts(InteractionContextType.Guild),
 
@@ -23,7 +23,7 @@ module.exports = {
             const phraseOption = interaction.options.getString('phrase');
             const phrase = phraseOption?.replace(/\s+/gu, ' ').trim();
             if (phraseOption !== null && !phrase) {
-                return interaction.editReply({ content: 'Enter a phrase containing more than whitespace.', allowedMentions: { parse: [] } });
+                return interaction.editReply({ content: 'Please enter a phrase containing more than whitespace.', allowedMentions: { parse: [] } });
             }
             let quote;
             let user = interaction.user;
@@ -47,7 +47,7 @@ module.exports = {
                 }
             } else {
                 const quotes = await interaction.client.messageCorpus.quotes(interaction.guildId, interaction.channelId, user.id);
-                quote = quotes.length ? quotes[Math.floor(Math.random() * quotes.length)] : "I'm still waiting for my genius moment.";
+                quote = quotes.length ? quotes[Math.floor(Math.random() * quotes.length)] : "I don't feel very genius :(";
             }
             const displayName = member?.displayName || member?.nick || user.displayName || user.username;
             const avatarURL = (typeof member?.displayAvatarURL === 'function' ? member : user)
@@ -61,7 +61,7 @@ module.exports = {
             await interaction.editReply({ files: [attachment], allowedMentions: { parse: [] } });
         } catch (error) {
             console.error('Failed to generate genius image:', error);
-            await interaction.editReply({ content: 'I could not create your quote image. Please try again shortly.', allowedMentions: { parse: [] } });
+            await interaction.editReply({ content: 'Unable to create your quote image. Please try again shortly.', allowedMentions: { parse: [] } });
         }
     },
 };

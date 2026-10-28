@@ -99,6 +99,22 @@ class MessageCorpus {
         return rows[0] || null;
     }
 
+    async randomQuote(guildId, channelId, authorId = null) {
+        const cutoff = this.now() - RETENTION_MS;
+        // Choose an author first so prolific posters don't dominate random-person mode.
+        if (authorId === null) {
+            const authors = await this.all(`SELECT DISTINCT author_id FROM messages
+                WHERE guild_id = ? AND channel_id = ? AND word_count BETWEEN 4 AND 16 AND created_at >= ?
+                ORDER BY random() LIMIT 1`, [guildId, channelId, cutoff]);
+            if (!authors.length) return null;
+            authorId = authors[0].author_id;
+        }
+        const rows = await this.all(`SELECT content, author_id AS authorId FROM messages
+            WHERE guild_id = ? AND channel_id = ? AND author_id = ? AND word_count BETWEEN 4 AND 16 AND created_at >= ?
+            GROUP BY content ORDER BY random() LIMIT 1`, [guildId, channelId, authorId, cutoff]);
+        return rows[0] || null;
+    }
+
     async prune() {
         await this.run('DELETE FROM messages WHERE created_at < ?', [this.now() - RETENTION_MS]);
     }

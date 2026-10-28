@@ -10,7 +10,7 @@ TucsonBot is a small Discord bot written in Node.js using discord.js and Keyv (s
 - Repeat specific phrases when asked
 
 # Prerequisites
-- Node.js 20+ (the project Dockerfile uses node:20-alpine)
+- Node.js 22+ (the project Dockerfile uses node:22-alpine)
 - npm
 - Docker (if deploying to a container)
 
@@ -47,10 +47,12 @@ node index.js
 Before using the slash commands you can deploy them to your test guild (or globally). With your .env set, run:
 
 ```
-node deploy-commands.js
+node --env-file=.env deploy-commands.js
 ```
 
 ## Docker
+
+For automated GitHub Release deployments to Hetzner, see [release setup](docs/releases.md).
 
 Build image and run with Docker compose:
 
@@ -76,7 +78,10 @@ docker compose up -d
 - /genius — Create a quote image from one of your saved messages in the current channel, with your server avatar, display name, and server name
 - /genius phrase:the goat — Pick a random matching short quote from anyone in the current channel, using the original author's display name and avatar. Enter the phrase without surrounding quotation marks. Matching uses a literal substring and ignores ASCII letter case; no matches produces a message instead of an image.
 
-`/genius` replaces `/inspire` and requires the bot's Attach Files permission. With no saved quotes, it uses a placeholder quote. Re-register commands with `node deploy-commands.js` (with environment variables loaded) and restart the bot to apply the rename.
+- /inspire — Use one of your own saved quotes with the original random background, centered white serif text, outline/shadow, and author name
+- /inspire source:random — Choose a random author with eligible quotes in the current channel, then a random quote by that author
+
+Both image commands require the bot's Attach Files permission. `/inspire` defaults to your own quotes; each eligible author has an equal chance in random-person mode. Both use the current channel's corpus and 4–16-word quotes. With no own quotes, a placeholder is used; random-person mode reports when the channel has no quotes. Re-register commands with `node deploy-commands.js` (with environment variables loaded) and restart the bot after changing command definitions.
 
 ## Quote corpus
 
