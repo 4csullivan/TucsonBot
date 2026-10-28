@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "discord-bot-architect": {
+      "source": "sickn33/agentic-awesome-skills",
+      "sourceType": "github",
+      "skillPath": "skills/discord-bot-architect/SKILL.md",
+      "computedHash": "e2b2f5d369ace5908fe6e2101b5ae57183f1dbb61556aa6b2924aa293616bd71"
+    }
+  }
+}

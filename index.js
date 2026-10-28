@@ -2,6 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { Client, Collection, Events, GatewayIntentBits } = require('discord.js');
 const { Keyv } = require('keyv');
+const { MessageCorpus } = require('./utils/message-corpus');
 
 // Create a new client instance
 const client = new Client({
@@ -50,8 +51,32 @@ async function initClient() {
     client.keyv = createKeyv('sqlite://./data/db.sqlite');
     client.keyv.on('error', (err) => console.error('Keyv connection error:', err));
 
+    client.messageCorpus = await MessageCorpus.open('./data/message-corpus.sqlite');
+    // Raw events include IDs even when messages are absent from discord.js's cache.
+    client.on(Events.Raw, packet => {
+        const data = packet.d;
+        let operation;
+        if (packet.t === 'MESSAGE_UPDATE') operation = client.messageCorpus.update(data);
+        if (packet.t === 'MESSAGE_DELETE') operation = client.messageCorpus.remove(data.guild_id, [data.id]);
+        if (packet.t === 'MESSAGE_DELETE_BULK') operation = client.messageCorpus.remove(data.guild_id, data.ids);
+        operation?.catch(error => console.error('Message corpus event failed:', error));
+    });
+    const corpusCleanup = setInterval(() => {
+        client.messageCorpus.prune().catch(error => console.error('Message corpus cleanup failed:', error));
+    }, 60 * 60 * 1000);
+    corpusCleanup.unref();
+
     // Log in to Discord with your client's token
-    client.login(process.env.DISCORD_TOKEN);
+    await client.login(process.env.DISCORD_TOKEN);
+    if (process.env.HEALTH_FILE) {
+        const health = setInterval(() => {
+            if (client.isReady()) fs.writeFileSync(process.env.HEALTH_FILE, 'ready');
+        }, 10_000);
+        health.unref();
+    }
 }
 
-initClient().catch(console.error);
+initClient().catch(error => {
+    console.error(error);
+    process.exit(1);
+});

@@ -7,7 +7,7 @@
     "example": "examples"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test"
   },
   "repository": {
     "type": "git",
@@ -25,6 +25,7 @@
     "@keyv/sqlite": "^4.0.8",
     "@napi-rs/canvas": "^1.0.9",
     "discord.js": "^14.26.4",
-    "keyv": "^5.6.0"
+    "keyv": "^5.6.0",
+    "sqlite3": "^5.1.7"
   }
 }

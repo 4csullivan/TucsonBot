@@ -1,0 +1,69 @@
+name: Deploy release to Hetzner
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hetzner-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: ${{ !github.event.release.prerelease }}
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Configure SSH
+        env:
+          SSH_KEY: ${{ secrets.HETZNER_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.HETZNER_KNOWN_HOSTS }}
+          HOST: ${{ secrets.HETZNER_HOST }}
+          USER: ${{ secrets.HETZNER_USER }}
+          PORT: ${{ vars.HETZNER_SSH_PORT || '22' }}
+        run: |
+          set -euo pipefail
+          [[ "$HOST" =~ ^[a-zA-Z0-9][a-zA-Z0-9.:-]*$ ]]
+          [[ "$USER" =~ ^[a-zA-Z_][a-zA-Z0-9_-]*$ ]]
+          [[ "$PORT" =~ ^[0-9]+$ ]]
+          test -n "$SSH_KEY" && test -n "$KNOWN_HOSTS"
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/hetzner
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/hetzner ~/.ssh/known_hosts
+          cat > ~/.ssh/config <<EOF
+          Host hetzner
+            HostName $HOST
+            User $USER
+            Port $PORT
+            IdentityFile ~/.ssh/hetzner
+            IdentitiesOnly yes
+            BatchMode yes
+            StrictHostKeyChecking yes
+            ConnectTimeout 15
+          EOF
+      - name: Deploy checked-out release
+        run: |
+          set -euo pipefail
+          sha=$(git rev-parse HEAD)
+          archive="release-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.tar.gz"
+          git archive --format=tar.gz -o "$RUNNER_TEMP/$archive" HEAD
+          scp "$RUNNER_TEMP/$archive" "hetzner:/opt/tucsonbot/$archive"
+          ssh hetzner "bash -s -- '$sha' '$archive'" < scripts/deploy-release.sh
+      - name: Remove runner SSH credentials
+        if: always()
+        run: rm -f ~/.ssh/hetzner ~/.ssh/config ~/.ssh/known_hosts

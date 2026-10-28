@@ -1,127 +1,51 @@
 const { AttachmentBuilder, SlashCommandBuilder, PermissionFlagsBits, InteractionContextType, MessageFlags } = require('discord.js');
-const { GlobalFonts, createCanvas, loadImage } = require('@napi-rs/canvas');
-const fs = require('node:fs');
-const path = require('node:path');
-const bgPath = path.join(__dirname, '../../assets/bg');
-
-GlobalFonts.registerFromPath('/usr/share/fonts/noto/NotoSerif-Regular.ttf', 'Noto Serif');
-
-let bgNames = [];
-
-function setBackgrounds() {
-    if (bgNames.length === 0) {
-        fs.readdirSync(bgPath).forEach(item => {
-            bgNames.push(path.resolve(bgPath, item));
-        });
-    }
-}
-
-function getBackground() {
-    return bgNames[Math.floor(Math.random() * bgNames.length)];
-}
-
-async function getLogs(interaction) {
-    const logKey = `guild_${interaction.guildId}_user_messages_${interaction.member.id}`;
-    return await interaction.client.keyv.get(logKey) || [];
-}
-
-const getWrappedTextConfig = (canvas, text) => {
-    const context = canvas.getContext('2d');
-    let fontSize = 70;
-    const minFontSize = 40; // The threshold where it switches to multi-line
-    const maxWidth = canvas.width - 100;
-
-    // 1. Try to shrink the font until it fits on one line or hits the minimum size
-    do {
-        context.font = `${fontSize}px "Noto Serif", "Noto Color Emoji"`;
-        if (context.measureText(text).width <= maxWidth) {
-            return { font: context.font, lines: [text] };
-        }
-        fontSize -= 4; // Smaller steps give smoother sizing
-    } while (fontSize >= minFontSize);
-
-    // 2. If it still doesn't fit at minFontSize, switch to multi-line word wrapping
-    context.font = `${minFontSize}px "Noto Serif", "Noto Color Emoji"`;
-    const words = text.split(' ');
-    const lines = [];
-    let currentLine = words[0];
-
-    for (let i = 1; i < words.length; i++) {
-        const word = words[i];
-        const width = context.measureText(currentLine + " " + word).width;
-        
-        if (width < maxWidth) {
-            currentLine += " " + word;
-        } else {
-            lines.push(currentLine);
-            currentLine = word;
-        }
-    }
-    lines.push(currentLine);
-
-    return { font: context.font, lines };
-};
+const { createInspireImage } = require('../../utils/inspire-image');
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('inspire')
-        .setDescription('Create an inspirational image :D')
-        .setContexts(InteractionContextType.Guild),
+        .setDescription('Put a saved quote on a random inspirational background')
+        .setContexts(InteractionContextType.Guild)
+        .addStringOption(option => option.setName('source')
+            .setDescription('Use your own quotes (default) or pick a random person in this channel')
+            .addChoices({ name: 'Self', value: 'self' }, { name: 'Anyone', value: 'random' })),
 
     async execute(interaction) {
-        let quote = "i'm not feeling very inspired :(";
-        let username = interaction.user.username;
-
-        // set the quote and username (username should be first in array)
-        const logs = await getLogs(interaction);
-        if (logs.length > 0) {
-            //username = logs[0];
-            const randomIndex = Math.max(1, Math.floor(Math.random() * logs.length));
-            quote = logs[randomIndex];
+        if (!interaction.inGuild()) {
+            return interaction.reply({ content: 'Use this command in a server.', flags: MessageFlags.Ephemeral });
         }
-
-        const canvas = createCanvas(800,800);
-        const context = canvas.getContext('2d');
-        setBackgrounds();
-        const background = await loadImage(getBackground());
-        context.drawImage(background, 0, 0, canvas.width, canvas.height);
-        
-        const {font, lines} = getWrappedTextConfig(canvas, quote);
-        context.font = font;
-        context.fillStyle = '#ffffff';
-        context.textAlign = 'center';
-        context.textBaseline = 'middle';
-
-        context.shadowColor = 'rgba(0,0,0,0.5)';
-        context.shadowBlur = 20;
-        context.shadowOffsetX = 4;
-        context.shadowOffsetY = 4;
-        context.strokeStyle = '#000000';
-        context.lineWidth = 3;
-        context.lineJoin = 'miter';
-
-        const fontSize = parseInt(font.match(/\d+/)[0]);
-        const lineHeight = fontSize * 1.2;
-        const totalTextHeight = lines.length * lineHeight;
-        let startY = (canvas.height / 2) - (totalTextHeight / 2);
-        const centerX = canvas.width / 2;
-        const centerY = canvas.height / 2;
-        lines.forEach((line, index) => {
-            const currentY = startY + (index * lineHeight);
-            context.strokeText(line, centerX, currentY);
-            context.fillText(line, centerX, currentY);
-        });
-
-        context.font = '36px "Noto Serif", "Noto Color Emoji"';
-        context.fillStyle = 'rgba(255, 255, 255, 0.9)';
-        context.textAlign = 'center';
-        context.textBaseline = 'middle';
-        //context.strokeText(username, centerX, totalTextHeight + startY);
-        context.fillText(username, centerX, totalTextHeight + startY);
-
-        // generate image
-        const attachment = new AttachmentBuilder(await canvas.encode('png'), { name: 'inspire.png' });
-
-        await interaction.reply({ files: [attachment] });
+        if (!interaction.appPermissions?.has(PermissionFlagsBits.AttachFiles)) {
+            return interaction.reply({ content: 'I need the Attach Files permission in this channel.', flags: MessageFlags.Ephemeral });
+        }
+        await interaction.deferReply();
+        try {
+            const randomPerson = interaction.options.getString('source') === 'random';
+            const match = await interaction.client.messageCorpus.randomQuote(interaction.guildId, interaction.channelId,
+                randomPerson ? null : interaction.user.id);
+            if (!match && randomPerson) {
+                return interaction.editReply({ content: 'No saved quotes are available in this channel yet.', allowedMentions: { parse: [] } });
+            }
+            const quote = match?.content || "I'm not feeling very inspired :(";
+            let user = interaction.user;
+            let member = interaction.member;
+            if (match && match.authorId !== user.id) {
+                try {
+                    member = await interaction.guild.members.fetch(match.authorId);
+                    user = member.user;
+                } catch (error) {
+                    if (error.code !== 10007) throw error;
+                    member = null;
+                    user = await interaction.client.users.fetch(match.authorId);
+                }
+            }
+            const displayName = member?.displayName || member?.nick || user.displayName || user.username;
+            const canvas = await createInspireImage(quote, displayName);
+            const attachment = new AttachmentBuilder(await canvas.encode('png'), { name: 'inspire.png' })
+                .setDescription(`Quote by ${displayName}: ${quote}`.slice(0, 1024));
+            await interaction.editReply({ files: [attachment], allowedMentions: { parse: [] } });
+        } catch (error) {
+            console.error('Failed to generate inspirational image:', error);
+            await interaction.editReply({ content: 'Unable to create your inspirational image. Please try again shortly.', allowedMentions: { parse: [] } });
+        }
     },
 };

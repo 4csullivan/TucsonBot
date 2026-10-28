@@ -1,4 +1,4 @@
-const { Client, Events, GatewayIntentBits } = require('discord.js');
+const { Events } = require('discord.js');
 const meanData = require('../assets/mean_phrases.json');
 const niceData = require('../assets/nice_phrases.json');
 const eightBallData = require('../assets/eight_ball_phrases.json');
@@ -121,26 +121,19 @@ async function checkFeature(message, feature) {
     return config;
 }
 
-function wordCount(messageContent) {
-    const words = messageContent.match(/\S+/g);
-    return words ? words.length : 0;
-}
-
-function validToLog(message) {
-    let valid = !message.mentions.users || message.mentions.users.size === 0;
-
-    const numWords = wordCount(message.content);
-    valid = valid && numWords > 3 && numWords <= 16;
-    valid = valid && !message.content.match(/<:\w+:\d+>/);
-    return valid;
-}
-
 module.exports = {
 	name: Events.MessageCreate,
 	async execute(message) {
-        if (message.author.bot) return;
+        if (!message.guildId || message.author.bot || message.webhookId || message.system) return;
 
-        trigger_words = ['tuscon'];
+        const trigger_words = ['tuscon'];
+
+        // Collection is independent of reaction/response feature flags and failures.
+        try {
+            await message.client.messageCorpus.record(message);
+        } catch (error) {
+            console.error('Message corpus collection failed:', error);
+        }
 
         try {
             const messageLower = message.content.toLowerCase();
@@ -198,16 +191,6 @@ module.exports = {
                     }
                 }
 
-                // log message for future use ;)
-                if (validToLog(message)) {
-                    const logKey = `guild_${message.guildId}_user_messages_${message.author.id}`;
-                    const userMsgs = await message.client.keyv.get(logKey) || [];
-                    if (userMsgs.length === 0) {
-                        userMsgs.push(message.author.displayName);
-                    }
-                    userMsgs.push(message.content);
-                    await message.client.keyv.set(logKey, userMsgs);
-                }
             }
         } catch (error) {
             console.error(error);
