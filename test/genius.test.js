@@ -86,7 +86,8 @@ test('command defers before work, scopes quotes to the current channel, and hand
             };
             await command.execute(interaction);
             assert.equal(calls[1].files[0].name, 'genius.png');
-            assert.match(calls[1].files[0].description, quotes.length ? /The only real quote/ : /genius moment/);
+            const expectedQuote = quotes.length ? 'The only real quote' : "I don't feel very genius :(";
+            assert.equal(calls[1].files[0].description, `Quote by User in Server: ${expectedQuote}`);
             assert.deepEqual(calls[1].allowedMentions, { parse: [] });
         }
         assert.equal(command.data.toJSON().name, 'genius');
