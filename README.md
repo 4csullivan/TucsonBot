@@ -76,12 +76,14 @@ docker compose up -d
 - /editfeature <feature> <enable|disable|limit> — Configure a feature for the guild
 - /checkfeature <feature> — Show current setting for a feature
 - /genius — Create a quote image from one of your saved messages in the current channel, with your server avatar, display name, and server name
-- /genius phrase:the goat — Pick a random matching short quote from anyone in the current channel, using the original author's display name and avatar. Enter the phrase without surrounding quotation marks. Matching uses a literal substring and ignores ASCII letter case; no matches produces a message instead of an image.
+- /genius phrase:the goat — Pick a random matching short quote from your saved messages in the current channel, using the original author's display name and avatar. Enter the phrase without surrounding quotation marks. Matching uses a literal substring and ignores ASCII letter case; no matches produces a message instead of an image.
 
 - /inspire — Use one of your own saved quotes with the original random background, centered white serif text, outline/shadow, and author name
+- /genius source:random — Choose a random author with eligible quotes in the current channel, then a random quote by that author
+- /inspire phrase:the goat — Search your saved quotes in the current channel, with original author attribution
 - /inspire source:random — Choose a random author with eligible quotes in the current channel, then a random quote by that author
 
-Both image commands require the bot's Attach Files permission. `/inspire` defaults to your own quotes; each eligible author has an equal chance in random-person mode. Both use the current channel's corpus and 4–16-word quotes. With no own quotes, a placeholder is used; random-person mode reports when the channel has no quotes. Re-register commands with `node deploy-commands.js` (with environment variables loaded) and restart the bot after changing command definitions.
+Both image commands require the bot's Attach Files permission. Both default to your own quotes and accept `source:self`, `source:random`, or `phrase`. Combine `phrase` with `source:self` to search your quotes or `source:random` to pick a random author with matching quotes, then one of their matches. Phrase alone searches your own quotes; only `source:random` selects another author. Each matching author has an equal chance in random-person mode. Both use the current channel's corpus and 4–16-word quotes. With no own quotes, a placeholder is used; random-person mode reports when the channel has no quotes. Re-register commands with `node deploy-commands.js` (with environment variables loaded) and restart the bot after changing command definitions.
 
 ## Quote corpus
 

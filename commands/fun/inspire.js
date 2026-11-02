@@ -1,14 +1,13 @@
 const { AttachmentBuilder, SlashCommandBuilder, PermissionFlagsBits, InteractionContextType, MessageFlags } = require('discord.js');
 const { createInspireImage } = require('../../utils/inspire-image');
 
+const { addQuoteOptions, selectQuote } = require('../../utils/quote-selection');
+
 module.exports = {
-    data: new SlashCommandBuilder()
+    data: addQuoteOptions(new SlashCommandBuilder()
         .setName('inspire')
-        .setDescription('Put a saved quote on a random inspirational background')
-        .setContexts(InteractionContextType.Guild)
-        .addStringOption(option => option.setName('source')
-            .setDescription('Use your own quotes (default) or pick a random person in this channel')
-            .addChoices({ name: 'Self', value: 'self' }, { name: 'Anyone', value: 'random' })),
+        .setDescription('Create a quote image from yourself, a random person, or a phrase search')
+        .setContexts(InteractionContextType.Guild)),
 
     async execute(interaction) {
         if (!interaction.inGuild()) {
@@ -19,11 +18,9 @@ module.exports = {
         }
         await interaction.deferReply();
         try {
-            const randomPerson = interaction.options.getString('source') === 'random';
-            const match = await interaction.client.messageCorpus.randomQuote(interaction.guildId, interaction.channelId,
-                randomPerson ? null : interaction.user.id);
-            if (!match && randomPerson) {
-                return interaction.editReply({ content: 'No saved quotes are available in this channel yet.', allowedMentions: { parse: [] } });
+            const { match, error } = await selectQuote(interaction);
+            if (error) {
+                return interaction.editReply({ content: error, allowedMentions: { parse: [] } });
             }
             const quote = match?.content || "I'm not feeling very inspired :(";
             let user = interaction.user;
@@ -33,6 +30,7 @@ module.exports = {
                     member = await interaction.guild.members.fetch(match.authorId);
                     user = member.user;
                 } catch (error) {
+                    // A departed member still has a Discord user profile.
                     if (error.code !== 10007) throw error;
                     member = null;
                     user = await interaction.client.users.fetch(match.authorId);

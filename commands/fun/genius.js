@@ -2,14 +2,13 @@ const { AttachmentBuilder, SlashCommandBuilder, PermissionFlagsBits, Interaction
 const { loadImage } = require('@napi-rs/canvas');
 const { renderGenius } = require('../../utils/genius-image');
 
+const { addQuoteOptions, selectQuote } = require('../../utils/quote-selection');
+
 module.exports = {
-    data: new SlashCommandBuilder()
+    data: addQuoteOptions(new SlashCommandBuilder()
         .setName('genius')
-        .setDescription('Create a quote image from your messages or search this channel by phrase')
-        .addStringOption(option => option.setName('phrase')
-            .setDescription('Find a random quote containing this phrase from anyone in this channel')
-            .setMinLength(1).setMaxLength(100))
-        .setContexts(InteractionContextType.Guild),
+        .setDescription('Create a quote image from yourself, a random person, or a phrase search')
+        .setContexts(InteractionContextType.Guild)),
 
     async execute(interaction) {
         if (!interaction.inGuild()) {
@@ -20,34 +19,23 @@ module.exports = {
         }
         await interaction.deferReply();
         try {
-            const phraseOption = interaction.options.getString('phrase');
-            const phrase = phraseOption?.replace(/\s+/gu, ' ').trim();
-            if (phraseOption !== null && !phrase) {
-                return interaction.editReply({ content: 'Please enter a phrase containing more than whitespace.', allowedMentions: { parse: [] } });
+            const { match, error } = await selectQuote(interaction);
+            if (error) {
+                return interaction.editReply({ content: error, allowedMentions: { parse: [] } });
             }
-            let quote;
+            const quote = match?.content || "I don't feel very genius :(";
             let user = interaction.user;
             let member = interaction.member;
-            if (phrase) {
-                const match = await interaction.client.messageCorpus.findQuote(interaction.guildId, interaction.channelId, phrase);
-                if (!match) {
-                    return interaction.editReply({ content: 'No saved quotes match that phrase in this channel. Try another phrase.', allowedMentions: { parse: [] } });
+            if (match && match.authorId !== user.id) {
+                try {
+                    member = await interaction.guild.members.fetch(match.authorId);
+                    user = member.user;
+                } catch (error) {
+                    // A departed member still has a Discord user profile.
+                    if (error.code !== 10007) throw error;
+                    member = null;
+                    user = await interaction.client.users.fetch(match.authorId);
                 }
-                quote = match.content;
-                if (match.authorId !== user.id) {
-                    try {
-                        member = await interaction.guild.members.fetch(match.authorId);
-                        user = member.user;
-                    } catch (error) {
-                        // A departed member still has a Discord user profile.
-                        if (error.code !== 10007) throw error;
-                        member = null;
-                        user = await interaction.client.users.fetch(match.authorId);
-                    }
-                }
-            } else {
-                const quotes = await interaction.client.messageCorpus.quotes(interaction.guildId, interaction.channelId, user.id);
-                quote = quotes.length ? quotes[Math.floor(Math.random() * quotes.length)] : "I don't feel very genius :(";
             }
             const displayName = member?.displayName || member?.nick || user.displayName || user.username;
             const avatarURL = (typeof member?.displayAvatarURL === 'function' ? member : user)

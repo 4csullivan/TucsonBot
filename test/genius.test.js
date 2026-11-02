@@ -35,7 +35,7 @@ test('phrase search uses the original author profile and reports no matches with
                 inGuild: () => true, appPermissions: { has: () => true },
                 guildId: 'guild', channelId: 'channel',
                 user: { id: 'invoker' },
-                options: { getString: () => scenario === 'blank' ? '   ' : '  the   goat  ' },
+                options: { getString: name => name === 'phrase' ? (scenario === 'blank' ? '   ' : '  the   goat  ') : 'random' },
                 guild: { name: 'Server', members: { fetch: async id => {
                     assert.equal(id, 'author');
                     if (scenario === 'departed') throw Object.assign(new Error('Unknown Member'), { code: 10007 });
@@ -43,8 +43,8 @@ test('phrase search uses the original author profile and reports no matches with
                 } } },
                 client: {
                     users: { fetch: async id => { assert.equal(id, 'author'); return author; } },
-                    messageCorpus: { findQuote: async (...args) => {
-                        assert.deepEqual(args, ['guild', 'channel', 'the goat']);
+                    messageCorpus: { randomQuote: async (...args) => {
+                        assert.deepEqual(args, ['guild', 'channel', null, 'the goat']);
                         return scenario === 'no-match' ? null : { content: 'You are the goat today', authorId: 'author' };
                     } },
                 },
@@ -76,10 +76,10 @@ test('command defers before work, scopes quotes to the current channel, and hand
                 guildId: 'guild', channelId: 'channel', guild: { name: 'Server' },
                 user: { id: 'user', username: 'User', displayAvatarURL: () => 'https://cdn.discordapp.com/avatar.png' },
                 options: { getString: () => null },
-                client: { messageCorpus: { quotes: async (...scope) => {
+                client: { messageCorpus: { randomQuote: async (...scope) => {
                     assert.equal(calls[0], 'defer');
                     assert.deepEqual(scope, ['guild', 'channel', 'user']);
-                    return quotes;
+                    return quotes.length ? { content: quotes[0], authorId: 'user' } : null;
                 } } },
                 deferReply: async () => calls.push('defer'),
                 editReply: async payload => calls.push(payload),
