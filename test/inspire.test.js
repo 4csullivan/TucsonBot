@@ -19,7 +19,7 @@ test('inspire supports own/random sources, original attribution, and empty histo
             const interaction = {
                 inGuild: () => true, appPermissions: { has: () => true },
                 guildId: 'guild', channelId: 'channel', user: { id: 'self', username: 'My Name' },
-                options: { getString: () => source },
+                options: { getString: name => name === 'source' ? source : null },
                 client: { messageCorpus: { randomQuote: async (...scope) => {
                     assert.equal(deferred, true);
                     assert.deepEqual(scope, ['guild', 'channel', source === 'random' ? null : 'self']);

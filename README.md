@@ -1,6 +1,6 @@
 # TucsonBot
 
-TucsonBot is a small Discord bot written in Node.js using discord.js and Keyv (sqlite) for lightweight per-guild configuration. It provides fun utilities related to the city of Tucson. Features can be enabled, disabled, or limited to specific roles per guild.
+TucsonBot is a small Discord bot written in Node.js using discord.js and SQLite for lightweight per-guild configuration. It provides fun utilities related to the city of Tucson. Features can be enabled, disabled, or limited to specific roles per guild.
 
 # Features
 
@@ -31,7 +31,7 @@ PUBLIC_KEY=YOUR_PUBLIC_KEY
 TEST_GUILD_ID=YOUR_TEST_GUILD_ID
 ```
 
-3. Create the data directory (Keyv sqlite DB is stored here):
+3. The bot creates its data directory automatically. You can also create it before starting:
 
 ```
 mkdir -p data
@@ -39,7 +39,7 @@ mkdir -p data
 
 4. Run the bot:
 ```
-node index.js
+node --env-file=.env index.js
 ```
 
 ## Register and deploy slash commands
@@ -63,10 +63,11 @@ docker compose up -d
 
 # Configuration & persistence
 
-- The bot uses Keyv backed by sqlite. The default DB file is ./data/db.sqlite.
-- Per-guild configuration keys are stored as:
-  - guild_<GUILD_ID>_az_roles — array of role IDs allowed for AZ-only features
-  - guild_<GUILD_ID>_config_<feature> — values: "enabled", "disabled", "limited"
+- Configuration uses direct SQLite tables in `data/db.sqlite`, resolved relative to the application directory. Keep the data directory on persistent storage.
+- `guild_features` stores one state per guild/feature with constrained values: "enabled", "disabled", or "limited". Unconfigured features default to enabled.
+- `guild_az_roles` stores one row per guild/role. Atomic inserts prevent concurrent additions from losing roles or creating duplicates.
+- On first startup, existing Keyv configuration is imported transactionally in the same database. A migration marker prevents old settings from being restored after later edits or role clearing. Invalid recognized settings abort startup and roll back the migration instead of silently resetting permissions.
+- Back up `data/db.sqlite` while the bot is stopped before upgrading. Legacy Keyv rows remain untouched for recovery, but are no longer used at runtime. Do not run an older bot version against the migrated database: it would read stale Keyv settings.
 
 # Available slash commands (examples)
 
@@ -76,16 +77,18 @@ docker compose up -d
 - /editfeature <feature> <enable|disable|limit> — Configure a feature for the guild
 - /checkfeature <feature> — Show current setting for a feature
 - /genius — Create a quote image from one of your saved messages in the current channel, with your server avatar, display name, and server name
-- /genius phrase:the goat — Pick a random matching short quote from anyone in the current channel, using the original author's display name and avatar. Enter the phrase without surrounding quotation marks. Matching uses a literal substring and ignores ASCII letter case; no matches produces a message instead of an image.
+- /genius phrase:the goat — Pick a random matching short quote from your saved messages in the current channel, using the original author's display name and avatar. Enter the phrase without surrounding quotation marks. Matching uses a literal substring and ignores ASCII letter case; no matches produces a message instead of an image.
 
 - /inspire — Use one of your own saved quotes with the original random background, centered white serif text, outline/shadow, and author name
+- /genius source:random — Choose a random author with eligible quotes in the current channel, then a random quote by that author
+- /inspire phrase:the goat — Search your saved quotes in the current channel, with original author attribution
 - /inspire source:random — Choose a random author with eligible quotes in the current channel, then a random quote by that author
 
-Both image commands require the bot's Attach Files permission. `/inspire` defaults to your own quotes; each eligible author has an equal chance in random-person mode. Both use the current channel's corpus and 4–16-word quotes. With no own quotes, a placeholder is used; random-person mode reports when the channel has no quotes. Re-register commands with `node deploy-commands.js` (with environment variables loaded) and restart the bot after changing command definitions.
+Both image commands require the bot's Attach Files permission. Both default to your own quotes and accept `source:self`, `source:random`, or `phrase`. Combine `phrase` with `source:self` to search your quotes or `source:random` to pick a random author with matching quotes, then one of their matches. Phrase alone searches your own quotes; only `source:random` selects another author. Each matching author has an equal chance in random-person mode. Both use the current channel's corpus and 4–16-word quotes. With no own quotes, a placeholder is used; random-person mode reports when the channel has no quotes. Re-register commands with `node deploy-commands.js` (with environment variables loaded) and restart the bot after changing command definitions.
 
 ## Quote corpus
 
-Message text lives in `data/message-corpus.sqlite`; Keyv remains responsible for configuration. Each message has its own row with message, guild, channel and author IDs, original creation time, last collection/update time, normalized content and word count. Inserts are parameterized and deduplicated by message ID, so concurrent events cannot overwrite another message's history.
+Message text lives in `data/message-corpus.sqlite`; configuration lives separately in `data/db.sqlite`. Each message has its own row with message, guild, channel and author IDs, original creation time, last collection/update time, normalized content and word count. Inserts are parameterized and deduplicated by message ID, so concurrent events cannot overwrite another message's history.
 
 - Collects human server messages independently of response/reaction settings. Skips bots, webhooks, system messages, links, mentions, custom emoji, code blocks and spoilers. Message Content intent must be enabled in the Developer Portal.
 - Keeps 2–200 words and at most 2,000 characters. Preserves case and punctuation, normalizing whitespace. `/genius` selects distinct 4–16-word messages by the invoking author in the current channel.

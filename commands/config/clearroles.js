@@ -7,8 +7,8 @@ module.exports = {
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
         .setContexts(InteractionContextType.Guild),
     async execute(interaction) {
-        const guildKey = `guild_${interaction.guildId}_az_roles`;
-        await interaction.client.keyv.delete(guildKey);
-        await interaction.reply({ content: 'All AZ roles have been cleared.', flags: MessageFlags.Ephemeral });
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+        await interaction.client.config.clearRoles(interaction.guildId);
+        await interaction.editReply({ content: 'All AZ roles have been cleared.' });
     },
 };

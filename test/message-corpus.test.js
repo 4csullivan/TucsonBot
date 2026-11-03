@@ -40,7 +40,7 @@ test('collection runs before a disabled response branch returns', async () => {
         client: {
             user: { id: 'bot' },
             messageCorpus: { record: async () => calls.push('record') },
-            keyv: { get: async () => { calls.push('config'); return 'disabled'; } },
+            config: { getFeature: async () => { calls.push('config'); return 'disabled'; } },
         },
     });
     assert.deepEqual(calls, ['record', 'config']);
@@ -102,6 +102,28 @@ test('phrase search returns the original author, treats SQL characters literally
     assert.equal((await corpus.findQuote('guild', 'channel', "100%_ the goat's")).authorId, 'user');
     time += RETENTION_MS + 1;
     assert.equal(await corpus.findQuote('guild', 'channel', 'the goat'), null);
+});
+
+test('combined phrase and source filters eligible authors and quotes literally', async t => {
+    let time = now;
+    const corpus = await MessageCorpus.open(':memory:', () => time);
+    t.after(() => corpus.close());
+    await corpus.record(message('1', 'This is a matching 100%_ quote'));
+    await corpus.record(message('2', 'This quote does not match'));
+    await corpus.record(message('3', 'Another author has no matches', { author: { id: 'other', bot: false } }));
+    await corpus.record(message('4', 'A private matching 100%_ quote', { channelId: 'private' }));
+    await corpus.record(message('5', 'Another guild matching 100%_ quote', { guildId: 'other' }));
+    for (const author of ['user', null]) {
+        for (let i = 0; i < 10; i++) {
+            assert.deepEqual(await corpus.randomQuote('guild', 'channel', author, 'MATCHING 100%_'), {
+                content: 'This is a matching 100%_ quote', authorId: 'user',
+            });
+        }
+        assert.equal(await corpus.randomQuote('guild', 'channel', author, "%' OR 1=1 --"), null);
+    }
+    assert.equal(await corpus.randomQuote('guild', 'channel', 'other', '100%_'), null);
+    time += RETENTION_MS + 1;
+    assert.equal(await corpus.randomQuote('guild', 'channel', null, '100%_'), null);
 });
 
 test('edits, single/bulk deletes and expiry work without cached Discord messages', async t => {

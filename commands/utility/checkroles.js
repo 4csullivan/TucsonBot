@@ -7,13 +7,13 @@ module.exports = {
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
         .setContexts(InteractionContextType.Guild),
     async execute(interaction) {
-        const guildKey = `guild_${interaction.guildId}_az_roles`;
-        const azRoleIDs = await interaction.client.keyv.get(guildKey) || [];
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+        const azRoleIDs = await interaction.client.config.getRoles(interaction.guildId);
         if (azRoleIDs.length > 0) {
             const roleMentions = azRoleIDs.map((id) => `<@&${id}>`).join(', ');
-            await interaction.reply({ content: `Current AZ roles are: ${roleMentions}`, flags: MessageFlags.Ephemeral });
+            await interaction.editReply({ content: `Current AZ roles are: ${roleMentions}` });
         } else {
-            await interaction.reply({ content: 'No AZ role set for this guild.', flags: MessageFlags.Ephemeral });
+            await interaction.editReply({ content: 'No AZ role set for this guild.' });
         }
     },
 };

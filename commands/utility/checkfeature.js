@@ -34,16 +34,16 @@ module.exports = {
         )
         .setContexts(InteractionContextType.Guild),
     async execute(interaction) {
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         const feature = interaction.options.getString('feature');
-        const guildKey = `guild_${interaction.guildId}_config_${feature}`;
 
-        const config = await interaction.client.keyv.get(guildKey);
+        const config = await interaction.client.config.getFeature(interaction.guildId, feature);
         if (config === 'disabled') {
-            await interaction.reply({ content: `The feature **${getFeatureName(feature)}** is disabled for this server.`, flags: MessageFlags.Ephemeral });
+            await interaction.editReply({ content: `The feature **${getFeatureName(feature)}** is disabled for this server.` });
         } else if (config === 'limited') {
-            await interaction.reply({ content: `The feature **${getFeatureName(feature)}** is limited to AZ members only for this server.`, flags: MessageFlags.Ephemeral });
+            await interaction.editReply({ content: `The feature **${getFeatureName(feature)}** is limited to AZ members only for this server.` });
         } else {
-            await interaction.reply({ content: `The feature **${getFeatureName(feature)}** is enabled for this server.`, flags: MessageFlags.Ephemeral });
+            await interaction.editReply({ content: `The feature **${getFeatureName(feature)}** is enabled for this server.` });
         }
     },
 };
