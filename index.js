@@ -1,7 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { Client, Collection, Events, GatewayIntentBits } = require('discord.js');
-const { Keyv } = require('keyv');
+const { GuildConfig } = require('./utils/guild-config');
 const { MessageCorpus } = require('./utils/message-corpus');
 
 // Create a new client instance
@@ -45,13 +45,28 @@ for (const file of eventFiles) {
     }
 }
 
+let shuttingDown = false;
+async function shutdown(exitCode = 0) {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    client.destroy();
+    const results = await Promise.allSettled([client.config?.close(), client.messageCorpus?.close()]);
+    for (const result of results) {
+        if (result.status === 'rejected') {
+            console.error('Database close failed:', result.reason);
+            exitCode = 1;
+        }
+    }
+    process.exit(exitCode);
+}
+process.once('SIGINT', () => shutdown());
+process.once('SIGTERM', () => shutdown());
+
 async function initClient() {
-    const { createKeyv } = await import('@keyv/sqlite');
-
-    client.keyv = createKeyv('sqlite://./data/db.sqlite');
-    client.keyv.on('error', (err) => console.error('Keyv connection error:', err));
-
-    client.messageCorpus = await MessageCorpus.open('./data/message-corpus.sqlite');
+    const dataDir = path.join(__dirname, 'data');
+    await fs.promises.mkdir(dataDir, { recursive: true });
+    client.config = await GuildConfig.open(path.join(dataDir, 'db.sqlite'));
+    client.messageCorpus = await MessageCorpus.open(path.join(dataDir, 'message-corpus.sqlite'));
     // Raw events include IDs even when messages are absent from discord.js's cache.
     client.on(Events.Raw, packet => {
         const data = packet.d;
@@ -78,5 +93,5 @@ async function initClient() {
 
 initClient().catch(error => {
     console.error(error);
-    process.exit(1);
+    return shutdown(1);
 });

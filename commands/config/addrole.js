@@ -9,22 +9,19 @@ module.exports = {
         .setContexts(InteractionContextType.Guild),
 
     async execute(interaction) {
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         const role = interaction.options.getRole('role');
-        const guildKey = `guild_${interaction.guildId}_az_roles`;
         
         if (role.id) {
-            const existingRoles = await interaction.client.keyv.get(guildKey) || [];
-            if (existingRoles.includes(role.id)) {
-                return await interaction.reply({ content: `The role <@&${role.id}> is already an AZ role for this guild.`, flags: MessageFlags.Ephemeral });
+            const added = await interaction.client.config.addRole(interaction.guildId, role.id);
+            if (!added) {
+                return await interaction.editReply({ content: `The role <@&${role.id}> is already an AZ role for this guild.` });
             }
 
-            existingRoles.push(role.id);
-
-            await interaction.client.keyv.set(guildKey, existingRoles);
-            await interaction.reply({ content: `Successfully added <@&${role.id}> to the AZ roles for this guild.`, flags: MessageFlags.Ephemeral });
+            await interaction.editReply({ content: `Successfully added <@&${role.id}> to the AZ roles for this guild.` });
         }
         else {
-            await interaction.reply({ content: 'Invalid role provided. Please try again with a valid role.', flags: MessageFlags.Ephemeral });
+            await interaction.editReply({ content: 'Invalid role provided. Please try again with a valid role.' });
         }
     },
 };

@@ -45,19 +45,19 @@ module.exports = {
         )
         .setContexts(InteractionContextType.Guild),
     async execute(interaction) {
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         const feature = interaction.options.getString('feature');
         const enabled = interaction.options.getString('enabled');
-        const guildKey = `guild_${interaction.guildId}_config_${feature}`;
 
         if (enabled === 'enable') {
-            await interaction.client.keyv.set(guildKey, 'enabled');
-            await interaction.reply({ content: `The feature **${getFeatureName(feature)}** has been enabled for this server.`, flags: MessageFlags.Ephemeral });
+            await interaction.client.config.setFeature(interaction.guildId, feature, 'enabled');
+            await interaction.editReply({ content: `The feature **${getFeatureName(feature)}** has been enabled for this server.` });
         } else if (enabled === 'disable') {
-            await interaction.client.keyv.set(guildKey, 'disabled');
-            await interaction.reply({ content: `The feature **${getFeatureName(feature)}** has been disabled for this server.`, flags: MessageFlags.Ephemeral });
+            await interaction.client.config.setFeature(interaction.guildId, feature, 'disabled');
+            await interaction.editReply({ content: `The feature **${getFeatureName(feature)}** has been disabled for this server.` });
         } else if (enabled === 'limit') {
-            await interaction.client.keyv.set(guildKey, 'limited');
-            await interaction.reply({ content: `The feature **${getFeatureName(feature)}** has been limited to AZ members only for this server.`, flags: MessageFlags.Ephemeral });
+            await interaction.client.config.setFeature(interaction.guildId, feature, 'limited');
+            await interaction.editReply({ content: `The feature **${getFeatureName(feature)}** has been limited to AZ members only for this server.` });
         }
     },
 };

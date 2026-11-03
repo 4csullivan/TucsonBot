@@ -40,7 +40,7 @@ test('collection runs before a disabled response branch returns', async () => {
         client: {
             user: { id: 'bot' },
             messageCorpus: { record: async () => calls.push('record') },
-            keyv: { get: async () => { calls.push('config'); return 'disabled'; } },
+            config: { getFeature: async () => { calls.push('config'); return 'disabled'; } },
         },
     });
     assert.deepEqual(calls, ['record', 'config']);
