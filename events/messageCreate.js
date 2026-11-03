@@ -24,7 +24,7 @@ async function replyToMention(message) {
         const canRepeat = await checkFeature(message, Feature.REPEAT);
         if (canRepeat === 'disabled') return;
         if (canRepeat === 'limited') {
-            await CheckAZ(message);
+            const isAZ = await CheckAZ(message);
             if (!isAZ) return;
         }
         var phraseToRepeat = messageLower.slice(repeatIndex + repeatPhrase.length).trim();
@@ -56,7 +56,7 @@ async function repeatPhrase(message, repeatIndex) {
     const canRepeat = await checkFeature(message, Feature.REPEAT);
     if (canRepeat === 'disabled') return;
     if (canRepeat === 'limited') {
-        await CheckAZ(message);
+        const isAZ = await CheckAZ(message);
         if (!isAZ) return;
     }
 
@@ -99,13 +99,9 @@ function isNice(message) {
     return nicePhrases.some((phrase) => messageLower.includes(phrase));
 }
 
-let azRoleIds = [];
-let isAZ = false;
-
 async function CheckAZ(message) {
-    const guildKey = `guild_${message.guildId}_az_roles`;
-    azRoleIds = await message.client.keyv.get(guildKey) || [];
-    isAZ = azRoleIds.some((roleID) => message.member.roles.cache.has(roleID));
+    const azRoleIds = await message.client.config.getRoles(message.guildId);
+    return azRoleIds.some(roleID => message.member?.roles.cache.has(roleID));
 }
 
 const Feature = {
@@ -116,9 +112,7 @@ const Feature = {
 }
 
 async function checkFeature(message, feature) {
-    const guildKey = `guild_${message.guildId}_config_${feature}`;
-    const config = await message.client.keyv.get(guildKey);
-    return config;
+    return message.client.config.getFeature(message.guildId, feature);
 }
 
 module.exports = {
@@ -141,7 +135,7 @@ module.exports = {
                 const canRespond = await checkFeature(message, Feature.RESPONSES);
                 if (canRespond === 'disabled') return;
                 if (canRespond === 'limited') {
-                    await CheckAZ(message);
+                    const isAZ = await CheckAZ(message);
                     if (!isAZ) return;
                 }
                 const repeatIndex = messageLower.indexOf('repeat the phrase');
@@ -156,7 +150,7 @@ module.exports = {
                 const canReact = await checkFeature(message, Feature.REACTIONS);
                 if (canReact === 'disabled') return;
                 if (canReact === 'limited') {
-                    await CheckAZ(message);
+                    const isAZ = await CheckAZ(message);
                     if (!isAZ) return;
                 }
                 await checkForMentions(message);
@@ -165,7 +159,7 @@ module.exports = {
                 const canRespond = await checkFeature(message, Feature.RESPONSES);
                 if (canRespond === 'disabled') return;
                 if (canRespond === 'limited') {
-                    await CheckAZ(message);
+                    const isAZ = await CheckAZ(message);
                     if (!isAZ) return;
                 }
                 await message.reply('Oops! You did me dirty! It\'s Tucson!');
@@ -175,7 +169,7 @@ module.exports = {
                     if (message.content.toLowerCase().includes(word)) {
                         const canTrigger = await checkFeature(message, Feature.MISSPELLINGS);
                         if (canTrigger === 'disabled') return;
-                        await CheckAZ(message);
+                        const isAZ = await CheckAZ(message);
                         if (canTrigger === 'limited') {
                             if (!isAZ) return;
                         }
