@@ -1,4 +1,5 @@
 const { Events } = require('discord.js');
+const { lobbyLink } = require('../utils/steam-lobby');
 const meanData = require('../assets/mean_phrases.json');
 const niceData = require('../assets/nice_phrases.json');
 const eightBallData = require('../assets/eight_ball_phrases.json');
@@ -127,6 +128,18 @@ module.exports = {
             await message.client.messageCorpus.record(message);
         } catch (error) {
             console.error('Message corpus collection failed:', error);
+        }
+
+        try {
+            const link = lobbyLink(message.content);
+            if (link) {
+                await message.reply({
+                    content: `[Join Steam lobby](${link})`,
+                    allowedMentions: { repliedUser: false },
+                });
+            }
+        } catch (error) {
+            console.error('Steam lobby reply failed:', error);
         }
 
         try {
