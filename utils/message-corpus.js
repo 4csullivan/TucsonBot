@@ -84,7 +84,7 @@ class MessageCorpus {
 
     async quotes(guildId, channelId, authorId) {
         const rows = await this.all(`SELECT DISTINCT content FROM messages
-            WHERE guild_id = ? AND channel_id = ? AND author_id = ? AND word_count BETWEEN 4 AND 16 AND created_at >= ?`,
+            WHERE guild_id = ? AND channel_id = ? AND author_id = ? AND word_count BETWEEN 3 AND 20 AND created_at >= ?`,
         [guildId, channelId, authorId, this.now() - RETENTION_MS]);
         return rows.map(row => row.content);
     }
@@ -92,7 +92,7 @@ class MessageCorpus {
     async findQuote(guildId, channelId, phrase) {
         // Literal substring matching: %, _ and quotes are text, never SQL syntax.
         const rows = await this.all(`SELECT content, author_id AS authorId FROM messages
-            WHERE guild_id = ? AND channel_id = ? AND word_count BETWEEN 4 AND 16 AND created_at >= ?
+            WHERE guild_id = ? AND channel_id = ? AND word_count BETWEEN 3 AND 20 AND created_at >= ?
             AND instr(lower(content), lower(?)) > 0
             GROUP BY author_id, content ORDER BY random() LIMIT 1`,
         [guildId, channelId, this.now() - RETENTION_MS, phrase]);
@@ -107,13 +107,13 @@ class MessageCorpus {
         // Choose an author first so prolific posters don't dominate random-person mode.
         if (authorId === null) {
             const authors = await this.all(`SELECT DISTINCT author_id FROM messages
-                WHERE guild_id = ? AND channel_id = ? AND word_count BETWEEN 4 AND 16 AND created_at >= ?${phraseFilter}
+                WHERE guild_id = ? AND channel_id = ? AND word_count BETWEEN 3 AND 20 AND created_at >= ?${phraseFilter}
                 ORDER BY random() LIMIT 1`, [guildId, channelId, cutoff, ...phraseParams]);
             if (!authors.length) return null;
             authorId = authors[0].author_id;
         }
         const rows = await this.all(`SELECT content, author_id AS authorId FROM messages
-            WHERE guild_id = ? AND channel_id = ? AND author_id = ? AND word_count BETWEEN 4 AND 16 AND created_at >= ?${phraseFilter}
+            WHERE guild_id = ? AND channel_id = ? AND author_id = ? AND word_count BETWEEN 3 AND 20 AND created_at >= ?${phraseFilter}
             GROUP BY content ORDER BY random() LIMIT 1`, [guildId, channelId, authorId, cutoff, ...phraseParams]);
         return rows[0] || null;
     }

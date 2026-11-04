@@ -42,6 +42,10 @@ mkdir -p data
 node --env-file=.env index.js
 ```
 
+## Handling slash command errors
+
+Command handlers send their own success responses. For validation failures, throw a `UserFacingError` from `utils/command-error.js` with a message the caller can act on. Let unexpected exceptions reach the interaction dispatcher. It logs the underlying error and sends a private fallback. A command can export a static `failureMessage` to customize that fallback.
+
 ## Register and deploy slash commands
 
 Before using the slash commands you can deploy them to your test guild (or globally). With your .env set, run:

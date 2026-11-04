@@ -1,6 +1,8 @@
 const { test } = require('node:test');
+const { MessageFlags } = require('discord.js');
 const assert = require('node:assert/strict');
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
+const dispatcher = require('../events/interactionCreate');
 const command = require('../commands/fun/genius');
 const { renderGenius } = require('../utils/genius-image');
 
@@ -31,7 +33,8 @@ test('phrase search uses the original author profile and reports no matches with
                 assert.equal(url, 'https://cdn.discordapp.com/author.png');
                 return { ok: true, arrayBuffer: async () => avatar };
             };
-            await command.execute({
+            await dispatcher.execute({
+                isChatInputCommand: () => true, commandName: 'genius',
                 inGuild: () => true, appPermissions: { has: () => true },
                 guildId: 'guild', channelId: 'channel',
                 user: { id: 'invoker' },
@@ -41,14 +44,24 @@ test('phrase search uses the original author profile and reports no matches with
                     if (scenario === 'departed') throw Object.assign(new Error('Unknown Member'), { code: 10007 });
                     return { user: author, displayName: 'Server Nickname', displayAvatarURL: author.displayAvatarURL };
                 } } },
-                client: {
+                client: { commands: new Map([[command.data.name, command]]),
                     users: { fetch: async id => { assert.equal(id, 'author'); return author; } },
                     messageCorpus: { randomQuote: async (...args) => {
                         assert.deepEqual(args, ['guild', 'channel', null, 'the goat']);
                         return scenario === 'no-match' ? null : { content: 'You are the goat today', authorId: 'author' };
                     } },
                 },
-                deferReply: async () => {}, editReply: async reply => { payload = reply; },
+                deferReply: async () => {}, deferred: true,
+                deleteReply: async () => { payload = 'deleted'; },
+                followUp: async reply => {
+                    assert.equal(payload, 'deleted');
+                    assert.equal(reply.flags, MessageFlags.Ephemeral);
+                    payload = reply;
+                },
+                editReply: async reply => {
+                    assert.ok(reply.files);
+                    payload = reply;
+                },
             });
             if (scenario === 'no-match' || scenario === 'blank') {
                 assert.equal(fetchedAvatar, false);

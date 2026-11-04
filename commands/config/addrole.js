@@ -1,3 +1,4 @@
+const { UserFacingError } = require('../../utils/command-error');
 const { SlashCommandBuilder, PermissionFlagsBits, InteractionContextType, MessageFlags } = require('discord.js');
 
 module.exports = {
@@ -11,17 +12,11 @@ module.exports = {
     async execute(interaction) {
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         const role = interaction.options.getRole('role');
-        
-        if (role.id) {
-            const added = await interaction.client.config.addRole(interaction.guildId, role.id);
-            if (!added) {
-                return await interaction.editReply({ content: `The role <@&${role.id}> is already an AZ role for this guild.` });
-            }
+        if (!role?.id) throw new UserFacingError('Invalid role provided. Please try again with a valid role.');
 
-            await interaction.editReply({ content: `Successfully added <@&${role.id}> to the AZ roles for this guild.` });
-        }
-        else {
-            await interaction.editReply({ content: 'Invalid role provided. Please try again with a valid role.' });
-        }
+        const added = await interaction.client.config.addRole(interaction.guildId, role.id);
+        if (!added) throw new UserFacingError(`The role <@&${role.id}> is already an AZ role for this guild.`);
+
+        await interaction.editReply({ content: `Successfully added <@&${role.id}> to the AZ roles for this guild.` });
     },
 };

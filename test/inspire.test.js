@@ -1,6 +1,8 @@
 const { test } = require('node:test');
+const { MessageFlags } = require('discord.js');
 const assert = require('node:assert/strict');
 const { loadImage } = require('@napi-rs/canvas');
+const dispatcher = require('../events/interactionCreate');
 const command = require('../commands/fun/inspire');
 const { createInspireImage } = require('../utils/inspire-image');
 
@@ -17,10 +19,11 @@ test('inspire supports own/random sources, original attribution, and empty histo
             let deferred = false;
             let payload;
             const interaction = {
+                isChatInputCommand: () => true, commandName: 'inspire',
                 inGuild: () => true, appPermissions: { has: () => true },
                 guildId: 'guild', channelId: 'channel', user: { id: 'self', username: 'My Name' },
                 options: { getString: name => name === 'source' ? source : null },
-                client: { messageCorpus: { randomQuote: async (...scope) => {
+                client: { commands: new Map([[command.data.name, command]]), messageCorpus: { randomQuote: async (...scope) => {
                     assert.equal(deferred, true);
                     assert.deepEqual(scope, ['guild', 'channel', source === 'random' ? null : 'self']);
                     return empty ? null : { content: 'This is a very inspiring quote', authorId: source === 'random' ? 'other' : 'self' };
@@ -30,9 +33,19 @@ test('inspire supports own/random sources, original attribution, and empty histo
                     return { displayName: 'Original Author', user: { id: 'other' } };
                 } } },
                 deferReply: async () => { deferred = true; },
-                editReply: async reply => { payload = reply; },
+                deferred: true,
+                deleteReply: async () => { payload = 'deleted'; },
+                followUp: async reply => {
+                    assert.equal(payload, 'deleted');
+                    assert.equal(reply.flags, MessageFlags.Ephemeral);
+                    payload = reply;
+                },
+                editReply: async reply => {
+                    assert.ok(reply.files);
+                    payload = reply;
+                },
             };
-            await command.execute(interaction);
+            await dispatcher.execute(interaction);
             if (source === 'random' && empty) {
                 assert.match(payload.content, /No saved quotes/);
                 assert.equal(payload.files, undefined);
