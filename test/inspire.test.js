@@ -16,7 +16,6 @@ test('inspire creates an 800px PNG from the existing backgrounds', async () => {
 test('inspire supports own/random sources, original attribution, and empty histories', async () => {
     for (const source of [null, 'self', 'random']) {
         for (const empty of [false, true]) {
-            let deferred = false;
             let payload;
             const interaction = {
                 isChatInputCommand: () => true, commandName: 'inspire',
@@ -24,7 +23,6 @@ test('inspire supports own/random sources, original attribution, and empty histo
                 guildId: 'guild', channelId: 'channel', user: { id: 'self', username: 'My Name' },
                 options: { getString: name => name === 'source' ? source : null },
                 client: { commands: new Map([[command.data.name, command]]), messageCorpus: { randomQuote: async (...scope) => {
-                    assert.equal(deferred, true);
                     assert.deepEqual(scope, ['guild', 'channel', source === 'random' ? null : 'self']);
                     return empty ? null : { content: 'This is a very inspiring quote', authorId: source === 'random' ? 'other' : 'self' };
                 } } },
@@ -32,17 +30,19 @@ test('inspire supports own/random sources, original attribution, and empty histo
                     assert.equal(id, 'other');
                     return { displayName: 'Original Author', user: { id: 'other' } };
                 } } },
-                deferReply: async () => { deferred = true; },
-                deferred: true,
-                deleteReply: async () => { payload = 'deleted'; },
-                followUp: async reply => {
-                    assert.equal(payload, 'deleted');
-                    assert.equal(reply.flags, MessageFlags.Ephemeral);
-                    payload = reply;
+                async deferReply(options) {
+                    assert.equal(options, undefined);
+                    this.deferred = true;
                 },
-                editReply: async reply => {
-                    assert.ok(reply.files);
-                    payload = reply;
+                reply: async message => {
+                    assert.equal(message.flags, MessageFlags.Ephemeral);
+                    payload = message;
+                },
+                async editReply(message) {
+                    assert.equal(this.deferred, true);
+                    assert.ok(message.files);
+                    assert.equal(message.content, undefined);
+                    payload = message;
                 },
             };
             await dispatcher.execute(interaction);

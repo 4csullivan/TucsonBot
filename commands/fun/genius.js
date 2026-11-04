@@ -19,11 +19,11 @@ module.exports = {
         if (!interaction.appPermissions?.has(PermissionFlagsBits.AttachFiles)) {
             throw new UserFacingError('I need the Attach Files permission in this channel.');
         }
-        await interaction.deferReply();
         const { match, error } = await selectQuote(interaction);
         if (error) {
             throw new UserFacingError(error);
         }
+        await interaction.deferReply();
         const quote = match?.content || "I don't feel very genius :(";
         let user = interaction.user;
         let member = interaction.member;

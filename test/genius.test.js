@@ -51,16 +51,19 @@ test('phrase search uses the original author profile and reports no matches with
                         return scenario === 'no-match' ? null : { content: 'You are the goat today', authorId: 'author' };
                     } },
                 },
-                deferReply: async () => {}, deferred: true,
-                deleteReply: async () => { payload = 'deleted'; },
-                followUp: async reply => {
-                    assert.equal(payload, 'deleted');
-                    assert.equal(reply.flags, MessageFlags.Ephemeral);
-                    payload = reply;
+                async deferReply(options) {
+                    assert.equal(options, undefined);
+                    this.deferred = true;
                 },
-                editReply: async reply => {
-                    assert.ok(reply.files);
-                    payload = reply;
+                reply: async message => {
+                    assert.equal(message.flags, MessageFlags.Ephemeral);
+                    payload = message;
+                },
+                async editReply(message) {
+                    assert.equal(this.deferred, true);
+                    assert.ok(message.files);
+                    assert.equal(message.content, undefined);
+                    payload = message;
                 },
             });
             if (scenario === 'no-match' || scenario === 'blank') {
@@ -76,7 +79,7 @@ test('phrase search uses the original author profile and reports no matches with
     }
 });
 
-test('command defers before work, scopes quotes to the current channel, and handles empty histories', async () => {
+test('command defers before rendering, scopes quotes to the current channel, and handles empty histories', async () => {
     const originalFetch = global.fetch;
     const avatar = await createCanvas(20, 20).encode('png');
     try {
@@ -90,7 +93,7 @@ test('command defers before work, scopes quotes to the current channel, and hand
                 user: { id: 'user', username: 'User', displayAvatarURL: () => 'https://cdn.discordapp.com/avatar.png' },
                 options: { getString: () => null },
                 client: { messageCorpus: { randomQuote: async (...scope) => {
-                    assert.equal(calls[0], 'defer');
+                    assert.equal(calls.length, 0);
                     assert.deepEqual(scope, ['guild', 'channel', 'user']);
                     return quotes.length ? { content: quotes[0], authorId: 'user' } : null;
                 } } },
@@ -98,6 +101,8 @@ test('command defers before work, scopes quotes to the current channel, and hand
                 editReply: async payload => calls.push(payload),
             };
             await command.execute(interaction);
+            assert.equal(calls[0], 'defer');
+            assert.equal(calls.length, 2);
             assert.equal(calls[1].files[0].name, 'genius.png');
             const expectedQuote = quotes.length ? 'The only real quote' : "I don't feel very genius :(";
             assert.equal(calls[1].files[0].description, `Quote by User in Server: ${expectedQuote}`);
