@@ -25,6 +25,7 @@ class GuildConfig {
         try {
             await config.run('PRAGMA busy_timeout = 5000');
             await config.run('BEGIN IMMEDIATE');
+            await config.run('CREATE TABLE IF NOT EXISTS steam_profiles (user_id TEXT PRIMARY KEY, steam_id TEXT NOT NULL)');
             await config.run(`CREATE TABLE IF NOT EXISTS guild_features (
                 guild_id TEXT NOT NULL, feature TEXT NOT NULL CHECK(feature IN ('misspelling_corrections', 'message_reactions', 'mention_response', 'repeat_phrase')),
                 state TEXT NOT NULL CHECK(state IN ('enabled', 'disabled', 'limited')),
@@ -68,6 +69,15 @@ class GuildConfig {
                 await this.run('INSERT OR IGNORE INTO guild_features VALUES (?, ?, ?)', [match[1], match[3], entry.value]);
             }
         }
+    }
+
+    async setSteamProfile(userId, steamId) {
+        await this.run('INSERT INTO steam_profiles VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET steam_id = excluded.steam_id', [userId, steamId]);
+    }
+
+    async getSteamProfile(userId) {
+        const rows = await this.all('SELECT steam_id FROM steam_profiles WHERE user_id = ?', [userId]);
+        return rows[0]?.steam_id;
     }
 
     async getFeature(guildId, feature) {
