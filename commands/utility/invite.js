@@ -1,21 +1,27 @@
 const { SlashCommandBuilder, InteractionContextType } = require('discord.js');
 const { UserFacingError } = require('../../utils/command-error');
-const { lobbyLink } = require('../../utils/steam-lobby');
+const { currentLobby } = require('../../utils/steam-profile');
+const { lobbyRow } = require('../../utils/steam-lobby');
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('invite')
-        .setDescription('Invite a friend to your Steam lobby in this channel')
+        .setDescription('Share your current Steam lobby in this channel')
         .setContexts(InteractionContextType.Guild)
-        .addUserOption(option => option.setName('friend').setDescription('Friend to invite').setRequired(true))
-        .addStringOption(option => option.setName('lobby').setDescription('Your steam://joinlobby link').setRequired(true)),
+        .addUserOption(option => option.setName('friend').setDescription('Friend to mention')),
+    failureMessage: 'Could not look up your lobby. Paste your Steam lobby link in chat.',
     async execute(interaction) {
-        const friend = interaction.options.getUser('friend', true);
-        const link = lobbyLink(interaction.options.getString('lobby', true), { exact: true });
-        if (!link) throw new UserFacingError('Paste the full steam://joinlobby link with the game, lobby, and Steam IDs.');
-        await interaction.reply({
-            content: `<@${friend.id}>, <@${interaction.user.id}> invited you to [join their Steam lobby](${link}).`,
-            allowedMentions: { users: [friend.id] },
+        await interaction.deferReply();
+        const id = await interaction.client.config.getSteamProfile(interaction.user.id);
+        if (!id) throw new UserFacingError('Save your Steam profile with /steam profile first, or paste your Steam lobby link in chat.');
+        const link = await currentLobby(id);
+        if (!link) throw new UserFacingError('No joinable lobby was visible on your Steam profile. Paste your Steam lobby link in chat.');
+        const friend = interaction.options.getUser('friend');
+        const host = `<@${interaction.user.id}>`;
+        await interaction.editReply({
+            content: friend ? `<@${friend.id}>, ${host} invited you to their Steam lobby.` : `Join ${host}’s Steam lobby.`,
+            components: [lobbyRow(link)],
+            allowedMentions: { parse: [], users: friend ? [friend.id] : [] },
         });
     },
 };

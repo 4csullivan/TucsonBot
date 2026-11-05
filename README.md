@@ -8,7 +8,7 @@ TucsonBot is a small Discord bot written in Node.js using discord.js and SQLite 
 - React to messages referencing TucsonBot
 - Respond to questions directed towards TucsonBot, giving an 'eight ball' like response
 - Repeat specific phrases when asked
-- Reply to a pasted Steam lobby link with a clickable join link. Use `/invite friend:@Friend lobby:<steam://joinlobby/...>` to mention a friend in the current channel. Both use the [Steam URI Redirector](https://linkoid.github.io/steamuri/) to open Steam.
+- Save your Steam Community profile with `/steam profile url:<profile URL>`. When Steam shows a public joinable lobby, use `/invite` to post a join button in the channel or `/invite friend:@Friend` to mention someone. If Steam hides the lobby, paste its `steam://joinlobby/...` link in chat for the same button. Buttons use the [Steam URI Redirector](https://linkoid.github.io/steamuri/).
 
 # Prerequisites
 - Node.js 22+ (the project Dockerfile uses node:22-alpine)

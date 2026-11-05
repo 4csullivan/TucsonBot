@@ -1,5 +1,5 @@
 const { Events } = require('discord.js');
-const { lobbyLink } = require('../utils/steam-lobby');
+const { lobbyLink, lobbyRow } = require('../utils/steam-lobby');
 const meanData = require('../assets/mean_phrases.json');
 const niceData = require('../assets/nice_phrases.json');
 const eightBallData = require('../assets/eight_ball_phrases.json');
@@ -134,7 +134,7 @@ module.exports = {
             const link = lobbyLink(message.content);
             if (link) {
                 await message.reply({
-                    content: `[Join Steam lobby](${link})`,
+                    components: [lobbyRow(link)],
                     allowedMentions: { repliedUser: false },
                 });
             }
